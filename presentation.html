@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Coding Platform Presentation</title>
+    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap');
+
+        body {
+            background-color: #050505;
+            color: #ffffff;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        button {
+            background: transparent;
+            color: #00ffff;
+            border: 1px solid #00ffff;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            margin-left: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 5px #00ffff;
+        }
+
+        button:hover {
+            background: #00ffff;
+            color: #000;
+            box-shadow: 0 0 15px #00ffff;
+        }
+
+        button.btn-pdf {
+            color: #ff00ff;
+            border-color: #ff00ff;
+            box-shadow: 0 0 5px #ff00ff;
+        }
+        
+        button.btn-pdf:hover {
+            background: #ff00ff;
+            color: #000;
+            box-shadow: 0 0 15px #ff00ff;
+        }
+
+        #presentation-container {
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .slide {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 10px;
+            margin-bottom: 40px;
+            padding: 50px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s;
+            page-break-after: always;
+            min-height: 562px; /* 16:9 aspect ratio approx */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .slide:hover {
+            transform: scale(1.01);
+            border-color: #555;
+        }
+
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #00ffff, #ff00ff, #39ff14);
+        }
+
+        .slide-number {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: #555;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .title-slide {
+            text-align: center;
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+        }
+
+        .title-slide h1 {
+            font-size: 3.5rem;
+            color: #00ffff;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+            margin-bottom: 30px;
+        }
+
+        .title-slide p {
+            font-size: 1.5rem;
+            margin: 10px 0;
+        }
+
+        .accent-magenta { color: #ff00ff; text-shadow: 0 0 5px rgba(255, 0, 255, 0.5); }
+        .accent-green { color: #39ff14; text-shadow: 0 0 5px rgba(57, 255, 20, 0.5); }
+        .accent-cyan { color: #00ffff; text-shadow: 0 0 5px rgba(0, 255, 255, 0.5); }
+
+        .content-slide h2 {
+            font-size: 2.5rem;
+            color: #00ffff;
+            border-bottom: 2px solid #333;
+            padding-bottom: 15px;
+            margin-bottom: 30px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        li::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: #ff00ff;
+            font-weight: bold;
+        }
+
+        li ul li {
+            font-size: 1.2rem;
+            color: #ccc;
+            margin-top: 5px;
+        }
+        
+        li ul li::before {
+            content: '-';
+            color: #39ff14;
+        }
+
+        /* Print styles for PDF export */
+        @media print {
+            body { background: #000; }
+            .controls { display: none; }
+            .slide { 
+                box-shadow: none; 
+                margin: 0; 
+                page-break-after: always;
+                border: none;
+                height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <button onclick="exportPPT()">Save as PPT</button>
+        <button class="btn-pdf" onclick="exportPDF()">Save as PDF</button>
+    </div>
+
+    <div id="presentation-container">
+
+        <!-- Slide 1 -->
+        <div class="slide title-slide" id="slide-1" data-title="Title Slide">
+            <h1>Online Coding Platform</h1>
+            <p>College: <span class="accent-green">Birla Vishvakarma Mahavidhyalaya</span></p>
+            <p>Mentor: <span class="accent-green">Prof. Nilesh Prajapati</span></p>
+            <br>
+            <p class="accent-magenta">Presented By:</p>
+            <p>Jagdish Pathakji</p>
+            <p>Yug Dholakiya</p>
+            <p>Rudra Gohil</p>
+            <div class="slide-number">01</div>
+        </div>
+
+        <!-- Slide 2 -->
+        <div class="slide content-slide" id="slide-2" data-title="Aim of the Project">
+            <h2>Aim of the Project</h2>
+            <ul>
+                <li>Develop an Online Coding Platform with AI-assisted guidance.</li>
+                <li>Enhance students' problem-solving and interview preparation skills.</li>
+                <li>Provide a unified platform for:
+                    <ul>
+                        <li>DSA practice</li>
+                        <li>AI-based coding assistance</li>
+                        <li>1-vs-1 coding challenges</li>
+                        <li>Interview simulations</li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="slide-number">02</div>
+        </div>
+
+        <!-- Slide 3 -->
+        <div class="slide content-slide" id="slide-3" data-title="Project Scope">
+            <h2>Project Scope</h2>
+            <ul>
+                <li>Web-based system designed for technical interview prep.</li>
+                <li>Target Audience: Students & individuals improving coding skills.</li>
+                <li>Key Features:
+                    <ul>
+                        <li>Practice Data Structures and Algorithms (DSA)</li>
+                        <li>Real-time AI guidance</li>
+                        <li>Competitive 1-vs-1 challenges</li>
+                        <li>Mock Technical Interviews</li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="slide-number">03</div>
+        </div>
+
+        <!-- Slide 4 -->
+        <div class="slide content-slide" id="slide-4" data-title="Project Objectives">
+            <h2>Project Objectives</h2>
+            <ul>
+                <li><strong>Solve Coding Problems:</strong> Practice across various difficulty levels.</li>
+                <li><strong>AI-Assisted Support:</strong> Context-aware hints and optimization tips.</li>
+                <li><strong>Interview Preparation:</strong> AI-driven and live simulation tools.</li>
+                <li><strong>User Engagement:</strong> Interactive and competitive environment.</li>
+            </ul>
+            <div class="slide-number">04</div>
+        </div>
+
+        <!-- Slide 5 -->
+        <div class="slide content-slide" id="slide-5" data-title="Project Modules">
+            <h2>Project Modules</h2>
+            <ul>
+                <li>1. Authentication Module</li>
+                <li>2. Problem Management Module</li>
+                <li>3. Interview Practice Module</li>
+                <li>4. One-on-One Coding Challenge Module</li>
+                <li>5. Progress Tracking Module</li>
+                <li>6. Profile Section Module</li>
+            </ul>
+            <div class="slide-number">05</div>
+        </div>
+
+        <!-- Slide 6 -->
+        <div class="slide content-slide" id="slide-6" data-title="System Requirements">
+            <h2>System Requirements</h2>
+            <ul>
+                <li><span class="accent-magenta">Hardware:</span>
+                    <ul>
+                        <li>Processor: Intel Core i5 or equivalent</li>
+                        <li>RAM: 4 GB or higher</li>
+                        <li>Internet: Stable connection</li>
+                    </ul>
+                </li>
+                <li><span class="accent-magenta">Software Stack:</span>
+                    <ul>
+                        <li>Frontend: React (HTML & CSS)</li>
+                        <li>Backend: Node.js, Express.js</li>
+                        <li>Database: MongoDB</li>
+                        <li>AI & Hosting: Ollama (gpt-oss), AWS</li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="slide-number">06</div>
+        </div>
+
+        <!-- Slide 7 -->
+        <div class="slide content-slide" id="slide-7" data-title="Core Modules">
+            <h2>Core Modules</h2>
+            <ul>
+                <li><strong>Authentication:</strong>
+                    <ul>
+                        <li>Secure Registration & Login</li>
+                        <li>JWT based Session Management</li>
+                    </ul>
+                </li>
+                <li><strong>Problem Management:</strong>
+                    <ul>
+                        <li>Structured Repository (Easy/Medium/Hard)</li>
+                        <li>Hidden/Visible Test Cases</li>
+                        <li>AI Hints & Syntax Error Explanation</li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="slide-number">07</div>
+        </div>
+
+        <!-- Slide 8 -->
+        <div class="slide content-slide" id="slide-8" data-title="Advanced Modules">
+            <h2>Advanced Modules</h2>
+            <ul>
+                <li><strong>Interview Practice:</strong>
+                    <ul>
+                        <li>Voice-based AI technical interviews</li>
+                        <li>Standard DSA interview rounds</li>
+                        <li>Timed sessions for realism</li>
+                    </ul>
+                </li>
+                <li><strong>One-on-One Challenges:</strong>
+                    <ul>
+                        <li>Real-time competitive coding</li>
+                        <li>Synchronized problem sets</li>
+                        <li>Live result comparison</li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="slide-number">08</div>
+        </div>
+
+        <!-- Slide 9 -->
+        <div class="slide content-slide" id="slide-9" data-title="Analytics & Profile">
+            <h2>Analytics & Profile</h2>
+            <ul>
+                <li><strong>Progress Tracking:</strong>
+                    <ul>
+                        <li>Exact submission history</li>
+                        <li>Accuracy & Performance Analytics</li>
+                        <li>Visual graphs of improvement</li>
+                    </ul>
+                </li>
+                <li><strong>Profile Section:</strong>
+                    <ul>
+                        <li>Skill Overview & Badges</li>
+                        <li>Public Profile for showcasing capability</li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="slide-number">09</div>
+        </div>
+
+        <!-- Slide 10 -->
+        <div class="slide content-slide" id="slide-10" data-title="Feasibility Study">
+            <h2>Feasibility Study</h2>
+            <ul>
+                <li><span class="accent-green">Technical:</span> Built on robust MERN stack. Feasible local LLM integration.</li>
+                <li><span class="accent-green">Operational:</span> User-friendly, self-paced learning.</li>
+                <li><span class="accent-green">Economic:</span> Open-source tech, scalable cloud deployment.</li>
+            </ul>
+            <div class="slide-number">10</div>
+        </div>
+
+        <!-- Slide 11 -->
+        <div class="slide content-slide" id="slide-11" data-title="Team Roles & Conclusion">
+            <h2>Team Roles & Conclusion</h2>
+            <ul>
+                <li><strong>Jagdish Pathakji:</strong> Problem Mgmt, 1v1 Challenge Module</li>
+                <li><strong>Yug Dholakiya:</strong> Authentication, Interview Practice Module</li>
+                <li><strong>Rudra Gohil:</strong> Progress Tracking, Profile Section</li>
+            </ul>
+            <br>
+            <h3 class="accent-magenta">Conclusion</h3>
+            <p>The platform bridges the gap between learning and industry application through AI and competition.</p>
+            <div class="slide-number">11</div>
+        </div>
+
+    </div>
+
+    <script>
+        // PPT Export Logic
+        function exportPPT() {
+            let pptx = new PptxGenJS();
+            pptx.layout = 'LAYOUT_16x9';
+
+            // Define Background Color
+            pptx.defineSlideMaster({
+                title: "DarkTheme",
+                background: { color: "000000" }
+            });
+
+            // --- Slide 1 ---
+            let slide1 = pptx.addSlide({ masterName: "DarkTheme" });
+            slide1.addText("Online Coding Platform", { x: 1, y: 1.5, w: 8, h: 1, fontSize: 44, color: "00FFFF", bold: true, align: "center", fontFace: "Arial" });
+            slide1.addText("College: Birla Vishvakarma Mahavidhyalaya", { x: 1, y: 3, w: 8, h: 0.5, fontSize: 18, color: "FFFFFF", align: "center", fontFace: "Arial" });
+            slide1.addText("Mentor: Prof. Nilesh Prajapati", { x: 1, y: 3.5, w: 8, h: 0.5, fontSize: 18, color: "FFFFFF", align: "center", fontFace: "Arial" });
+            slide1.addText("Presented By:", { x: 1, y: 4.5, w: 8, h: 0.5, fontSize: 20, color: "FF00FF", bold: true, align: "center", fontFace: "Arial" });
+            slide1.addText("Jagdish Pathakji\nYug Dholakiya\nRudra Gohil", { x: 1, y: 5.2, w: 8, h: 1.5, fontSize: 18, color: "FFFFFF", align: "center", fontFace: "Arial" });
+
+            // Helper to add standard content slides
+            function addSlide(title, items) {
+                let slide = pptx.addSlide({ masterName: "DarkTheme" });
+                slide.addText(title, { x: 0.5, y: 0.5, w: 9, h: 0.8, fontSize: 32, color: "00FFFF", bold: true, fontFace: "Arial" });
+                
+                let startY = 1.5;
+                items.forEach((item, idx) => {
+                    let text = item.text || item;
+                    let indentLevel = item.level || 0;
+                    
+                    slide.addText(text, {
+                        x: 0.5 + (indentLevel * 0.5),
+                        y: startY,
+                        w: 9,
+                        h: 0.5,
+                        fontSize: 20,
+                        color: "FFFFFF",
+                        bullet: indentLevel === 0,
+                        fontFace: "Arial"
+                    });
+                    startY += 0.6;
+                });
+            }
+
+            // --- Content Slides ---
+            addSlide("Aim of the Project", [
+                "Develop an Online Coding Platform with AI-assisted guidance.",
+                "Enhance students' problem-solving and interview preparation skills.",
+                "Provide a unified platform for:",
+                { text: "DSA practice", level: 1 },
+                { text: "AI-based coding assistance", level: 1 },
+                { text: "1-vs-1 coding challenges", level: 1 },
+                { text: "Interview simulations", level: 1 }
+            ]);
+
+            addSlide("Project Scope", [
+                "Web-based system designed for technical interview prep.",
+                "Target Audience: Students & individuals improving coding skills.",
+                "Key Features:",
+                { text: "Practice Data Structures and Algorithms (DSA)", level: 1 },
+                { text: "Real-time AI guidance", level: 1 },
+                { text: "Mock Technical Interviews", level: 1 }
+            ]);
+
+            addSlide("Project Objectives", [
+                "Solve Coding Problems: Practice across various difficulty levels.",
+                "AI-Assisted Support: Context-aware hints and optimization tips.",
+                "Interview Preparation: AI-driven and live simulation tools.",
+                "User Engagement: Interactive and competitive environment."
+            ]);
+
+            addSlide("Project Modules", [
+                "1. Authentication Module",
+                "2. Problem Management Module",
+                "3. Interview Practice Module",
+                "4. One-on-One Coding Challenge Module",
+                "5. Progress Tracking Module",
+                "6. Profile Section Module"
+            ]);
+
+            addSlide("System Requirements", [
+                "Hardware:",
+                { text: "Processor: Intel Core i5 or equivalent", level: 1 },
+                { text: "RAM: 4 GB or higher", level: 1 },
+                "Software Stack:",
+                { text: "Frontend: React", level: 1 },
+                { text: "Backend: Node.js, Express.js", level: 1 },
+                { text: "Database: MongoDB", level: 1 },
+                { text: "AI: Ollama (gpt-oss)", level: 1 }
+            ]);
+
+            addSlide("Core Modules", [
+                "Authentication:",
+                { text: "Secure Registration & Login", level: 1 },
+                { text: "JWT based Session Management", level: 1 },
+                "Problem Management:",
+                { text: "Structured Repository (Easy/Medium/Hard)", level: 1 },
+                { text: "Hidden/Visible Test Cases", level: 1 }
+            ]);
+
+            addSlide("Advanced Modules", [
+                "Interview Practice:",
+                { text: "Voice-based AI technical interviews", level: 1 },
+                { text: "Timed sessions for realism", level: 1 },
+                "One-on-One Challenges:",
+                { text: "Real-time competitive coding", level: 1 },
+                { text: "Live result comparison", level: 1 }
+            ]);
+
+             addSlide("Analytics & Profile", [
+                "Progress Tracking:",
+                { text: "Exact submission history", level: 1 },
+                { text: "Visual graphs of improvement", level: 1 },
+                "Profile Section:",
+                { text: "Skill Overview & Badges", level: 1 }
+            ]);
+
+            addSlide("Feasibility Study", [
+                "Technical: Built on robust MERN stack.",
+                "Operational: User-friendly, self-paced learning.",
+                "Economic: Open-source tech, scalable cloud deployment."
+            ]);
+
+            addSlide("Team Roles & Conclusion", [
+                "Jagdish Pathakji: Problem Mgmt, 1v1 Challenge Module",
+                "Yug Dholakiya: Authentication, Interview Practice Module",
+                "Rudra Gohil: Progress Tracking, Profile Section",
+                "",
+                "Conclusion: The platform bridges the gap between learning and industry application."
+            ]);
+
+            pptx.writeFile({ fileName: "Online_Coding_Platform_Presentation.pptx" });
+        }
+
+        // PDF Export Logic
+        function exportPDF() {
+            var element = document.getElementById('presentation-container');
+            var opt = {
+                margin:       [10, 0, 10, 0], // top, left, bottom, right
+                filename:     'Online_Coding_Platform_Presentation.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, backgroundColor: "#000000" },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: 'css', after: '.slide' }
+            };
+
+            // New Promise-based usage:
+            html2pdf().set(opt).from(element).save();
+        }
+    </script>
+</body>
+</html>
