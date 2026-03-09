@@ -9,18 +9,21 @@ const questionsubmiited = async (req, res) => {
 
     try {
 
-        const token = req.cookies.token
-        if (!token)
-        return res.status(401).send({ status: "login", message: "Unauthorized: Token not found, Please Login again" });
-
         console.log(process.env.JWT_SECRET_KEY)
         const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY)
 
-        const code = req.body;
-        const requiredFields = ["code"]
+        const code = req.body.code;
+        const language = req.body.language;
+        const requiredFields = ["code", "language"]
 
         if (!code)
-            return res.status(400).send({ status: false, message: "Please fill all the required fields" })
+            return res.status(400).send({ status: false, message: "Source code not provided" })
+
+        if (!language)
+            return res.status(400).send({ status: false, message: "Source code language not provided" })
+
+        // code submission logic
+
 
         return res.status(200).send({
             status: true,

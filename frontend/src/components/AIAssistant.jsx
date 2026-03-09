@@ -70,7 +70,7 @@ export default function AIAssistant({ question, code, language }) {
             const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content })); // Last 10 context
 
             // Calling backend proxy instead of direct Ollama
-            const response = await fetch("http://localhost:3000/ai/chat", {
+            const response = await fetch("http://localhost:3000/user/ai/chat", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

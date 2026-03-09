@@ -7,6 +7,8 @@ import Signup from "./components/Signup";
 import VerifyOtp from "./components/VerifyOtp";
 import Dashboard from "./components/Dashboard";
 import Solve from "./components/Solve";
+import InterviewSetup from "./components/start-interview"
+import InterviewRoom from "./components/InterviewRoom";
 
 function RequireNoAuth({ children }) {
     const token = localStorage.getItem("token");
@@ -71,6 +73,24 @@ export default function App() {
                     element={
                         <RequireAuth>
                             <Solve />
+                        </RequireAuth>
+                    }
+                />
+
+                <Route
+                    path="/ai-interview"
+                    element={
+                        <RequireAuth>
+                           <InterviewSetup />
+                        </RequireAuth>
+                    }
+                />
+
+                <Route
+                    path="/interview-room"
+                    element={
+                        <RequireAuth>
+                            <InterviewRoom />
                         </RequireAuth>
                     }
                 />
