@@ -9,6 +9,8 @@ import Dashboard from "./components/Dashboard";
 import Solve from "./components/Solve";
 import InterviewSetup from "./components/start-interview"
 import InterviewRoom from "./components/InterviewRoom";
+import DSAInterviewSetup from "./components/DSAInterviewSetup";
+import DSAInterviewRoom from "./components/DSAInterviewRoom";
 
 function RequireNoAuth({ children }) {
     const token = localStorage.getItem("token");
@@ -81,7 +83,7 @@ export default function App() {
                     path="/ai-interview"
                     element={
                         <RequireAuth>
-                           <InterviewSetup />
+                            <InterviewSetup />
                         </RequireAuth>
                     }
                 />
@@ -91,6 +93,24 @@ export default function App() {
                     element={
                         <RequireAuth>
                             <InterviewRoom />
+                        </RequireAuth>
+                    }
+                />
+
+                <Route
+                    path="/dsa-interview"
+                    element={
+                        <RequireAuth>
+                            <DSAInterviewSetup />
+                        </RequireAuth>
+                    }
+                />
+
+                <Route
+                    path="/dsa-interview-room"
+                    element={
+                        <RequireAuth>
+                            <DSAInterviewRoom />
                         </RequireAuth>
                     }
                 />
