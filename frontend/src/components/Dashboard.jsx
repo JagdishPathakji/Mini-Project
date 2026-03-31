@@ -6,7 +6,12 @@ import {
     ChevronLeft,
     ChevronRight,
     Filter,
-    CheckCircle2
+    CheckCircle2,
+    ArrowRight,
+    Sparkles,
+    TerminalSquare,
+    Code2,
+    ChevronDown
 } from "lucide-react";
 
 import Navbar from "./Navbar";
@@ -20,8 +25,6 @@ export default function Dashboard() {
     // Frontend filtering state
     const [searchTerm, setSearchTerm] = useState("");
     const [difficultyFilter, setDifficultyFilter] = useState("All");
-
-    const topics = ["Arrays", "Strings", "Linked List", "Trees", "Graph", "DP", "Recursion", "Backtracking"];
 
     const fetchAllQuestion = async (windowNumber) => {
         setLoading(true);
@@ -61,111 +64,129 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="min-h-screen bg-black text-white font-sans selection:bg-white selection:text-black">
+        <div className="min-h-screen bg-[#030303] text-white font-sans selection:bg-white selection:text-black relative overflow-hidden">
+            {/* Ambient Animated Background Gradients */}
+            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/10 blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-600/10 blur-[120px] pointer-events-none" />
+            <div className="absolute top-[40%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] rounded-full bg-emerald-600/[0.03] blur-[150px] pointer-events-none" />
+
             <Navbar />
 
             {/* Main Content */}
-            <main className="pt-24 pb-12 max-w-7xl mx-auto px-6">
+            <main className="pt-28 pb-16 max-w-7xl mx-auto px-6 relative z-10">
 
-                {/* Header Section */}
-                <div className="mb-10">
-                    <h1 className="text-3xl font-bold mb-2">Problem Set</h1>
-                    <p className="text-neutral-400">Master data structures and algorithms with curated problems.</p>
+                {/* Hero Section */}
+                <div className="flex flex-col items-center justify-center text-center mb-16 mt-4">
+                    <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight mb-6 bg-gradient-to-b from-white to-neutral-500 bg-clip-text text-transparent">
+                        Elevate Your Skills
+                    </h1>
+                    <p className="text-base md:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed">
+                        Dive into curated problem sets designed to build your algorithmic intuition and crack the toughest technical interviews.
+                    </p>
                 </div>
 
-                {/* Topic Tags */}
-                <div className="mb-8 overflow-x-auto pb-2 scrollbar-hide">
-                    <div className="flex gap-2 min-w-max">
-                        {topics.map((topic) => (
-                            <button
-                                key={topic}
-                                className="px-4 py-1.5 rounded-full border border-neutral-800 bg-neutral-950 text-neutral-400 text-sm font-medium hover:border-neutral-600 hover:text-white transition-all whitespace-nowrap"
+                {/* Omnibar Search & Filter Island */}
+                <div className="max-w-3xl mx-auto mb-12">
+                    <div className="flex flex-col md:flex-row gap-3 p-2 bg-white/[0.03] backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={18} />
+                            <input
+                                type="text"
+                                placeholder="Search the unknown..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-transparent border-none pl-12 pr-4 py-3.5 text-white placeholder-neutral-500 focus:outline-none focus:ring-0 transition-all text-sm font-medium"
+                            />
+                        </div>
+                        <div className="hidden md:block w-px h-8 bg-white/10 self-center" />
+                        <div className="relative w-full md:w-48 shrink-0">
+                            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={16} />
+                            <select
+                                value={difficultyFilter}
+                                onChange={(e) => setDifficultyFilter(e.target.value)}
+                                className="w-full h-full bg-transparent border-none pl-11 pr-8 py-3.5 text-white appearance-none focus:outline-none focus:ring-0 cursor-pointer text-sm font-medium"
                             >
-                                {topic}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Filters & Search */}
-                <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                    <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Search questions..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full bg-neutral-900 border border-neutral-800 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition-all"
-                        />
-                    </div>
-                    <div className="relative w-full sm:w-48">
-                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" size={16} />
-                        <select
-                            value={difficultyFilter}
-                            onChange={(e) => setDifficultyFilter(e.target.value)}
-                            className="w-full bg-neutral-900 border border-neutral-800 rounded-lg pl-10 pr-8 py-2.5 text-white appearance-none focus:outline-none focus:ring-2 focus:ring-white focus:border-transparent transition-all cursor-pointer"
-                        >
-                            <option value="All">All Difficulty</option>
-                            <option value="Easy">Easy</option>
-                            <option value="Medium">Medium</option>
-                            <option value="Hard">Hard</option>
-                        </select>
-                        <div className="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-neutral-500">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                <option value="All" className="bg-neutral-900">All Levels</option>
+                                <option value="Easy" className="bg-neutral-900 text-green-400">Easy</option>
+                                <option value="Medium" className="bg-neutral-900 text-yellow-400">Medium</option>
+                                <option value="Hard" className="bg-neutral-900 text-red-400">Hard</option>
+                            </select>
+                            <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none text-neutral-500">
+                                <ChevronDown size={14} />
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Questions List */}
-                <div className="bg-neutral-950 border border-neutral-900 rounded-xl overflow-hidden shadow-sm">
-                    {/* Table Header */}
-                    <div className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-neutral-900 bg-neutral-900/30 text-xs font-semibold text-neutral-400 uppercase tracking-wider">
-                        <div className="col-span-1">Status</div>
-                        <div className="col-span-8 sm:col-span-6">Title</div>
-                        <div className="hidden sm:block sm:col-span-3">Tags</div>
-                        <div className="col-span-3 sm:col-span-2 text-right">Difficulty</div>
-                    </div>
 
-                    {/* List */}
+                {/* Problem Grid */}
+                <div className="mb-10">
                     {loading ? (
-                        <div className="p-12 flex flex-col items-center justify-center text-neutral-500">
-                            <div className="w-8 h-8 border-2 border-neutral-800 border-t-white rounded-full animate-spin mb-4"></div>
-                            <p>Loading problems...</p>
+                        <div className="py-24 flex flex-col items-center justify-center text-neutral-500">
+                            <div className="w-10 h-10 border-2 border-neutral-800 border-t-blue-500 rounded-full animate-spin mb-6"></div>
+                            <p className="text-sm font-medium tracking-wide uppercase">Connecting to Database...</p>
                         </div>
                     ) : filteredQuestions.length === 0 ? (
-                        <div className="p-12 text-center text-neutral-500">
-                            <p>No questions found matching your criteria.</p>
+                        <div className="py-24 text-center text-neutral-500 bg-white/[0.02] border border-white/[0.05] rounded-3xl backdrop-blur-sm">
+                            <TerminalSquare size={48} className="mx-auto mb-4 opacity-50" />
+                            <p className="text-lg font-medium text-white mb-2">No problems found</p>
+                            <p className="text-sm">Try adjusting your filters or search term.</p>
                         </div>
                     ) : (
-                        <div className="divide-y divide-neutral-900">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {filteredQuestions.map((q, idx) => {
-                                // Color coding for difficulty
-                                const diffColor =
-                                    q.qdifficulty === "Easy" ? "text-green-500" :
-                                        q.qdifficulty === "Medium" ? "text-yellow-500" :
-                                            "text-red-500";
+                                const diffMeta = 
+                                    q.qdifficulty === "Easy" ? { color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/20", glow: "group-hover:shadow-[0_0_30px_-5px_rgba(52,211,153,0.15)]" } :
+                                    q.qdifficulty === "Medium" ? { color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/20", glow: "group-hover:shadow-[0_0_30px_-5px_rgba(251,191,36,0.15)]" } :
+                                    { color: "text-rose-400", bg: "bg-rose-400/10", border: "border-rose-400/20", glow: "group-hover:shadow-[0_0_30px_-5px_rgba(244,63,94,0.15)]" };
+
                                 return (
-                                    <div key={q._id || idx} className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-neutral-900/50 transition-colors group" onClick={() => handleQuestionClick(q)}>
-                                        <div className="col-span-1 text-neutral-600 group-hover:text-white transition-colors">
-                                            <CheckCircle2 size={18} />
+                                    <div 
+                                        key={q._id || idx} 
+                                        onClick={() => handleQuestionClick(q)}
+                                        className={`group relative flex flex-col p-6 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.06] hover:border-white/20 transition-all duration-500 cursor-pointer overflow-hidden ${diffMeta.glow} hover:-translate-y-1`}
+                                    >
+                                        {/* Subtle internal gradient hover effect */}
+                                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
+                                        {/* Card Header: Difficulty & Status */}
+                                        <div className="flex justify-between items-center mb-5 relative z-10">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase border ${diffMeta.bg} ${diffMeta.color} ${diffMeta.border}`}>
+                                                {q.qdifficulty}
+                                            </span>
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-neutral-600 group-hover:text-blue-400">
+                                                <CheckCircle2 size={18} />
+                                            </div>
                                         </div>
-                                        <div className="col-span-8 sm:col-span-6">
-                                            <h3 className="text-sm font-medium text-white group-hover:text-blue-400 transition-colors cursor-pointer truncate">
-                                                {q.qno}. {q.qheading}
-                                            </h3>
-                                        </div>
-                                        <div className="hidden sm:block sm:col-span-3">
+
+                                        {/* Problem Title */}
+                                        <h3 className="text-xl font-bold text-white mb-3 group-hover:text-blue-300 transition-colors leading-tight relative z-10 flex items-start gap-2">
+                                            <span className="text-neutral-500 text-sm mt-1">{q.qno}.</span>
+                                            {q.qheading}
+                                        </h3>
+
+                                        {/* Spacer to push tags to bottom */}
+                                        <div className="flex-1" />
+
+                                        {/* Tags & Action Area */}
+                                        <div className="flex items-end justify-between mt-6 relative z-10">
                                             <div className="flex gap-2 flex-wrap">
                                                 {q.qtags && q.qtags.slice(0, 2).map(t => (
-                                                    <span key={t} className="px-2 py-0.5 rounded-md bg-neutral-900 text-neutral-400 text-xs border border-neutral-800">
+                                                    <span key={t} className="px-2.5 py-1 rounded-lg bg-black/40 text-neutral-400 text-xs font-medium border border-white/5 group-hover:border-white/10 transition-colors">
                                                         {t}
                                                     </span>
                                                 ))}
+                                                {q.qtags && q.qtags.length > 2 && (
+                                                    <span className="px-2.5 py-1 rounded-lg bg-black/40 text-neutral-500 text-xs font-medium border border-white/5">
+                                                        +{q.qtags.length - 2}
+                                                    </span>
+                                                )}
                                             </div>
-                                        </div>
-                                        <div className={`col-span-3 sm:col-span-2 text-right text-sm font-medium ${diffColor}`}>
-                                            {q.qdifficulty}
+
+                                            {/* Hover Action Button */}
+                                            <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300 border border-blue-500/20">
+                                                <ArrowRight size={16} />
+                                            </div>
                                         </div>
                                     </div>
                                 );
@@ -175,27 +196,29 @@ export default function Dashboard() {
                 </div>
 
                 {/* Pagination */}
-                <div className="mt-6 flex items-center justify-between">
-                    <div className="text-sm text-neutral-500">
-                        Page <span className="text-white font-medium">{windowNo}</span>
-                    </div>
-                    <div className="flex gap-2">
+                {!loading && questions.length > 0 && (
+                    <div className="flex items-center justify-center gap-6 mt-16 pb-8">
                         <button
                             onClick={() => setWindowNo(prev => Math.max(1, prev - 1))}
-                            disabled={windowNo === 1 || loading}
-                            className="p-2 rounded-lg border border-neutral-800 bg-neutral-950 text-neutral-400 hover:text-white hover:border-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            disabled={windowNo === 1}
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all duration-300 font-medium text-sm backdrop-blur-md"
                         >
-                            <ChevronLeft size={20} />
+                            <ChevronLeft size={16} /> Previous
                         </button>
+                        
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full border border-white/10 bg-white/5 text-white font-bold backdrop-blur-md shadow-inner">
+                            {windowNo}
+                        </div>
+
                         <button
                             onClick={() => setWindowNo(prev => prev + 1)}
-                            disabled={loading || questions.length < 10}
-                            className="p-2 rounded-lg border border-neutral-800 bg-neutral-950 text-neutral-400 hover:text-white hover:border-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            disabled={questions.length < 10}
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all duration-300 font-medium text-sm backdrop-blur-md"
                         >
-                            <ChevronRight size={20} />
+                            Next <ChevronRight size={16} />
                         </button>
                     </div>
-                </div>
+                )}
 
             </main>
         </div>

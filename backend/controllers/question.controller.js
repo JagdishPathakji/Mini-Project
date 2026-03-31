@@ -21,11 +21,16 @@ const questionsubmiited = async (req, res) => {
         console.log(code)
         console.log(language)
 
+        const qno = req.body.qno;
+
         if (!code)
             return res.status(400).send({ status: false, message: "Source code not provided" })
 
         if (!language)
             return res.status(400).send({ status: false, message: "Source code language not provided" })
+
+        if (!qno)
+            return res.status(400).send({ status: false, message: "Question number not provided" })
 
         const languageMap = {
             "python": 71,
@@ -39,36 +44,122 @@ const questionsubmiited = async (req, res) => {
             return res.status(400).json({ status: false, message: "Unsupported language" });
         }
 
-        const testcase = {
-            input: "[1,2,3,4,5]",
-            output: "15"
+        const doc = await question.findOne({ qno: Number(qno) });
+        if (!doc) {
+            return res.status(404).send({ status: false, message: "Question not found" });
+        }
+
+        const testcases = doc.qinput_output;
+        if (!testcases || testcases.length === 0) {
+            return res.status(400).send({ status: false, message: "No test cases found for this question" });
         }
 
         const encodedCode = encode(code);
-        const encodedInput = encode(testcase.input)
-        const encodedOutput = encode(testcase.output)
 
+        let maxTime = 0;
+        let maxMemory = 0;
 
-        const response = await axios.post(`${JUDGE0_URL}/submissions?base64_encoded=true&wait=true`, {
-            language_id: languageId,
-            source_code: encodedCode,
-            stdin: encodedInput,
-            expected_output: encodedOutput
-        });
+        // Initiate SSE Stream
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
 
-        const result = response.data;
-        console.log("Status:", result);
+        const CONCURRENCY_LIMIT = 12;
 
-        return res.status(200).send({
+        for (let i = 0; i < testcases.length; i += CONCURRENCY_LIMIT) {
+            const chunk = testcases.slice(i, i + CONCURRENCY_LIMIT);
+
+            const promises = chunk.map(async (testcase, indexInChunk) => {
+                const globalIndex = i + indexInChunk;
+                
+                // Yield running status
+                res.write(`data: ${JSON.stringify({
+                    stage: "running",
+                    testcase: globalIndex + 1,
+                    total: testcases.length
+                })}\n\n`);
+
+                const encodedInput = encode(testcase.input || "");
+                const encodedOutput = encode(testcase.output || "");
+
+                const response = await axios.post(`${JUDGE0_URL}/submissions?base64_encoded=true&wait=true`, {
+                    language_id: languageId,
+                    source_code: encodedCode,
+                    stdin: encodedInput,
+                    expected_output: encodedOutput
+                });
+
+                const result = response.data;
+                console.log(`Testcase ${globalIndex + 1} status:`, result.status);
+
+                if (result.status && result.status.id !== 3) {
+                    const failPayload = { globalIndex, result, testcase };
+                    throw new Error(`TESTCASE_FAIL:${JSON.stringify(failPayload)}`);
+                }
+
+                // Yield pass status
+                res.write(`data: ${JSON.stringify({
+                    stage: "passed",
+                    testcase: globalIndex + 1,
+                    time: result.time,
+                    memory: result.memory
+                })}\n\n`);
+
+                return { time: result.time, memory: result.memory };
+            });
+
+            try {
+                const chunkResults = await Promise.all(promises);
+                for (let cr of chunkResults) {
+                    if (cr.time) maxTime = Math.max(maxTime, parseFloat(cr.time));
+                    if (cr.memory) maxMemory = Math.max(maxMemory, parseFloat(cr.memory));
+                }
+            } catch (err) {
+                if (err.message && err.message.startsWith("TESTCASE_FAIL:")) {
+                    const failedData = JSON.parse(err.message.substring(14));
+                    res.write(`data: ${JSON.stringify({
+                        status: false,
+                        stage: "completed",
+                        message: `Testcase ${failedData.globalIndex + 1} failed: ${failedData.result.status.description}`,
+                        details: failedData.result,
+                        failed_testcase: {
+                            input: failedData.testcase.input,
+                            expected_output: failedData.testcase.output
+                        }
+                    })}\n\n`);
+                    return res.end();
+                } else {
+                    throw err; // Re-throw network or structural errors
+                }
+            }
+        }
+
+        res.write(`data: ${JSON.stringify({
             status: true,
-            message: "Question solved successfully"
-        })
+            stage: "completed",
+            message: "All test cases passed successfully",
+            total_testcases: testcases.length,
+            details: {
+                time: maxTime.toFixed(3),
+                memory: maxMemory
+            }
+        })}\n\n`);
+        return res.end();
     }
     catch (error) {
-        return res.status(500).send({
-            status: false,
-            message: `Internal server error ${error}`
-        })
+        if (!res.headersSent) {
+            return res.status(500).send({
+                status: false,
+                message: `Internal server error ${error}`
+            });
+        } else {
+            res.write(`data: ${JSON.stringify({
+                status: false,
+                stage: "completed",
+                message: `Internal server error: ${error.message}`
+            })}\n\n`);
+            return res.end();
+        }
     }
 
 }

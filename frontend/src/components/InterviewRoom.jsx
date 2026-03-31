@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
+import { Mic, Radio, AlertCircle, ShieldAlert, LogOut, CheckCircle2 } from "lucide-react";
 import Navbar from "./Navbar";
 
 const BACKEND_URL = "http://localhost:3000/user/ai/interview";
@@ -145,16 +146,15 @@ Rules:
 
     useEffect(() => {
         const handleKeyDown = (e) => {
-            // Block: Alt+Tab, Ctrl+Tab, Win key, F11 exit, PrintScreen
             const blocked = (
                 (e.altKey && e.key === "Tab") ||
                 (e.ctrlKey && e.key === "Tab") ||
                 (e.metaKey) ||
                 (e.key === "PrintScreen") ||
-                (e.ctrlKey && e.shiftKey && e.key === "I") || // DevTools
+                (e.ctrlKey && e.shiftKey && e.key === "I") || 
                 (e.ctrlKey && e.shiftKey && e.key === "J") ||
                 (e.key === "F12") ||
-                (e.ctrlKey && e.key === "u")                  // View source
+                (e.ctrlKey && e.key === "u")                  
             );
             if (blocked) {
                 e.preventDefault();
@@ -229,138 +229,194 @@ Rules:
         navigate("/ai-interview");
     };
 
-    // ─── Violation badge color ─────────────────────────────────────────────────
-
-    const violationColor = violations === 0
-        ? "text-green-400"
-        : violations === 1
-            ? "text-yellow-400"
-            : violations === 2
-                ? "text-orange-400"
-                : "text-red-400";
-
     // ─── Render ────────────────────────────────────────────────────────────────
 
     return (
         <div
             ref={containerRef}
-            className="min-h-screen bg-black text-white font-sans selection:bg-white selection:text-black"
+            className="min-h-screen bg-[#030303] text-white font-sans selection:bg-white selection:text-black relative overflow-hidden"
             onCopy={e => e.preventDefault()}
             onPaste={e => e.preventDefault()}
             onCut={e => e.preventDefault()}
         >
             <Navbar />
 
-            <main className="pt-24 pb-12 max-w-4xl mx-auto px-6">
+            {/* Ambient Animated Background Gradients */}
+            <div className="absolute top-[10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/10 blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-[0%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-600/10 blur-[120px] pointer-events-none" />
+
+            <main className="pt-24 pb-12 max-w-5xl mx-auto px-6 relative z-10 flex flex-col h-screen">
 
                 {/* Header */}
-                <div className="mb-10 flex items-start justify-between">
+                <div className="flex items-center justify-between mb-8 flex-shrink-0">
                     <div>
-                        <h1 className="text-3xl font-bold mb-2">Interview Room</h1>
-                        <p className="text-neutral-400">Live AI-powered mock interview session.</p>
+                        <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-br from-white to-neutral-500 bg-clip-text text-transparent">Interview Room</h1>
+                        <p className="text-neutral-400 text-sm mt-1">Live AI-powered verbal assessment</p>
                     </div>
                     <button
                         onClick={() => setShowExitModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-colors duration-200"
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 text-sm font-bold transition-all hover:shadow-[0_0_20px_-5px_rgba(239,68,68,0.3)] hover:-translate-y-0.5"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
-                        </svg>
-                        Exit Interview
+                        <LogOut size={16} />
+                        Exit Session
                     </button>
                 </div>
 
-                {/* Session Card */}
-                <div className="bg-neutral-950 border border-neutral-900 rounded-xl p-8 space-y-6">
+                {/* Core Layout Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+                    
+                    {/* LEFT COLUMN: Data & Transcripts */}
+                    <div className="lg:col-span-2 flex flex-col gap-6 min-h-0">
+                        
+                        {/* Status Bento Row */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-shrink-0">
+                            <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4 backdrop-blur-md">
+                                <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-1">Role</p>
+                                <p className="text-white font-semibold truncate" title={role}>{role}</p>
+                            </div>
+                            <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4 backdrop-blur-md">
+                                <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-1">Difficulty</p>
+                                <p className="text-white font-semibold">{difficulty}</p>
+                            </div>
+                            <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4 backdrop-blur-md">
+                                <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-1">Phase</p>
+                                <div className="flex items-center gap-2 font-semibold">
+                                    <div className={`w-2 h-2 rounded-full animate-pulse ${phase === 'ai-speaking' ? 'bg-amber-400 shadow-[0_0_10px_#fbbf24]' : 'bg-emerald-400 shadow-[0_0_10px_#34d399]'}`} />
+                                    <span className={phase === 'ai-speaking' ? 'text-amber-400' : 'text-emerald-400'}>
+                                        {phase === "ai-speaking" ? "Speaking" : "Listening"}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className={`border rounded-2xl p-4 backdrop-blur-md transition-colors duration-500 ${violations > 0 ? 'bg-orange-500/10 border-orange-500/30' : 'bg-white/[0.02] border-white/[0.05]'}`}>
+                                <p className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${violations > 0 ? 'text-orange-400' : 'text-neutral-500'}`}>Violations</p>
+                                <p className={`font-bold ${violations > 0 ? 'text-orange-400' : 'text-white'}`}>{violations} <span className="text-neutral-500 text-xs">/ {MAX_VIOLATIONS}</span></p>
+                            </div>
+                        </div>
 
-                    {/* Info Row */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                        <div>
-                            <p className="text-neutral-500 uppercase tracking-wider mb-1">Role</p>
-                            <p className="text-white font-medium">{role}</p>
+                        {/* Transcript Box */}
+                        <div className="flex-1 bg-white/[0.02] border border-white/[0.05] rounded-3xl p-6 backdrop-blur-md flex flex-col relative overflow-hidden group">
+                             <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
+                             <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-4 flex-shrink-0 flex items-center gap-2">
+                                <Mic size={14} className={phase === 'listening' ? 'text-emerald-400 animate-pulse' : 'text-neutral-500'} />
+                                Live Transcript
+                             </p>
+                             <div className="flex-1 overflow-y-auto w-full text-lg md:text-2xl text-white font-medium leading-relaxed pb-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent pr-4">
+                                {transcript ? (
+                                    <span className="text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">{transcript}</span>
+                                ) : (
+                                    <span className="text-neutral-600 italic">Waiting for your response...</span>
+                                )}
+                             </div>
+                             
+                             {/* Fading bottom edge */}
+                            <div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-[#0a0a0a] to-transparent pointer-events-none rounded-b-3xl"></div>
                         </div>
-                        <div>
-                            <p className="text-neutral-500 uppercase tracking-wider mb-1">Difficulty</p>
-                            <p className="text-white font-medium">{difficulty}</p>
-                        </div>
-                        <div>
-                            <p className="text-neutral-500 uppercase tracking-wider mb-1">Status</p>
-                            <p className={phase === "ai-speaking" ? "text-yellow-400" : "text-green-400"}>
-                                {phase === "ai-speaking" ? "AI Speaking" : "Listening"}
+                    </div>
+
+                    {/* RIGHT COLUMN: AI Core & Proctoring */}
+                    <div className="flex flex-col gap-6 min-h-0">
+                        {/* The AI Core Representation */}
+                        <div className="bg-white/[0.02] border border-white/[0.05] rounded-3xl p-8 backdrop-blur-md flex flex-col items-center justify-center flex-1 relative overflow-hidden">
+                            <h3 className="absolute top-6 left-6 text-[10px] text-neutral-500 uppercase tracking-widest font-bold flex items-center gap-2">
+                                <Radio size={14} className={phase === 'ai-speaking' ? 'text-amber-400 animate-pulse' : 'text-neutral-500'} />
+                                NEXA Core
+                            </h3>
+                            
+                            {/* Glowing Orb Animation depending on state */}
+                            <div className="relative mt-8">
+                                {phase === "ai-speaking" ? (
+                                    <>
+                                        {/* Speaking State Orbs */}
+                                        <div className="absolute inset-0 bg-amber-500 rounded-full blur-[40px] opacity-40 animate-pulse mix-blend-screen scale-150"></div>
+                                        <div className="absolute inset-0 bg-blue-500 rounded-full blur-[30px] opacity-30 animate-[spin_4s_linear_infinite] mix-blend-screen scale-[1.2]"></div>
+                                        <div className="w-24 h-24 bg-gradient-to-br from-amber-300 via-white to-amber-100 rounded-full shadow-[0_0_60px_#fbbf24] animate-[pulse_1s_ease-in-out_infinite] border-4 border-white/40 flex items-center justify-center relative z-10">
+                                            <div className="w-16 h-16 bg-white/50 rounded-full animate-ping opacity-50"></div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        {/* Listening State Orbs */}
+                                        <div className="absolute inset-0 bg-emerald-500 rounded-full blur-[40px] opacity-20 animate-[pulse_3s_ease-in-out_infinite] mix-blend-screen scale-125"></div>
+                                        <div className="w-24 h-24 bg-gradient-to-br from-neutral-600 to-neutral-800 rounded-full shadow-[0_0_30px_rgba(52,211,153,0.1)] border border-white/10 flex items-center justify-center relative z-10 transition-all duration-700">
+                                            <div className="w-8 h-8 rounded-full bg-emerald-400/20 blur-md animate-pulse"></div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                            <p className={`mt-10 font-bold uppercase tracking-[0.2em] text-xs transition-colors duration-500 ${phase === 'ai-speaking' ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                {phase === "ai-speaking" ? "Transmitting..." : "Receiving..."}
                             </p>
                         </div>
-                        <div>
-                            <p className="text-neutral-500 uppercase tracking-wider mb-1">Violations</p>
-                            <p className={`font-medium ${violationColor}`}>{violations} / {MAX_VIOLATIONS}</p>
+
+                        {/* Proctoring Log */}
+                        <div className="bg-white/[0.02] border border-white/[0.05] rounded-3xl p-6 backdrop-blur-md flex-shrink-0 max-h-[250px] flex flex-col">
+                            <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold flex items-center gap-2 mb-4">
+                                <ShieldAlert size={14} className={violations > 0 ? 'text-orange-400' : 'text-neutral-500'} />
+                                Security Ledger
+                            </p>
+
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[10px] tracking-wider font-bold uppercase ${isFullscreen ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400" : "border-red-500/20 bg-red-500/10 text-red-400"}`}>
+                                    <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${isFullscreen ? "bg-emerald-400" : "bg-red-400"}`} />
+                                    FS Monitored
+                                </span>
+                                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-blue-500/20 bg-blue-500/10 text-blue-400 text-[10px] tracking-wider font-bold uppercase">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                                    Focus Lock
+                                </span>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/5 scrollbar-track-transparent">
+                                {violationLog.length > 0 ? (
+                                    <ul className="space-y-2">
+                                        {violationLog.map((v, i) => (
+                                            <li key={i} className="text-xs flex items-center justify-between text-neutral-300 p-2 rounded-lg bg-red-500/5 border border-red-500/10">
+                                                <span className="truncate pr-2">#{v.count} - {v.reason}</span>
+                                                <span className="text-red-400 font-mono text-[10px] whitespace-nowrap">{v.timestamp}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <div className="flex items-center justify-center h-full text-neutral-600 text-xs italic">
+                                        No violations detected.
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Transcript Box */}
-                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4 min-h-[120px] text-neutral-300 select-none">
-                        {transcript || "Waiting for your response..."}
                     </div>
-
-                    {/* Proctoring Status Bar */}
-                    <div className="flex flex-wrap gap-3 text-xs">
-                        <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full border ${isFullscreen ? "border-green-800 bg-green-900/20 text-green-400" : "border-red-800 bg-red-900/20 text-red-400"}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${isFullscreen ? "bg-green-400" : "bg-red-400"} animate-pulse`} />
-                            {isFullscreen ? "Fullscreen Active" : "Fullscreen Exited"}
-                        </span>
-                        <span className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-blue-800 bg-blue-900/20 text-blue-400">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                            Tab-Switch Monitored
-                        </span>
-                        <span className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-purple-800 bg-purple-900/20 text-purple-400">
-                            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-                            Copy/Paste Blocked
-                        </span>
-                    </div>
-
-                    {/* Violation Log */}
-                    {violationLog.length > 0 && (
-                        <div className="border border-red-900/40 bg-red-950/20 rounded-lg p-4">
-                            <p className="text-xs text-red-400 uppercase tracking-wider font-semibold mb-3">⚠ Proctoring Log</p>
-                            <ul className="space-y-1.5">
-                                {violationLog.map((v, i) => (
-                                    <li key={i} className="text-xs flex justify-between text-red-300">
-                                        <span>#{v.count} — {v.reason}</span>
-                                        <span className="text-red-500 ml-4">{v.timestamp}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
                 </div>
+
             </main>
 
             {/* ── Exit Confirmation Modal ── */}
             {showExitModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-                    <div className="bg-neutral-900 border border-neutral-700 rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-red-600/20 flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                                </svg>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowExitModal(false)}></div>
+                    <div className="relative bg-neutral-950/80 border border-white/10 rounded-3xl w-full max-w-md p-8 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-300 overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent pointer-events-none" />
+                        <div className="flex flex-col items-center text-center relative z-10">
+                            <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
+                                <LogOut size={32} className="text-red-400" />
                             </div>
-                            <h2 className="text-lg font-semibold text-white">Exit Interview?</h2>
-                        </div>
-                        <p className="text-neutral-400 text-sm mb-6">
-                            Are you sure you want to exit? Your current interview session will end and you will be redirected to the dashboard.
-                        </p>
-                        <div className="flex gap-3 justify-end">
-                            <button
-                                onClick={() => setShowExitModal(false)}
-                                className="px-5 py-2 rounded-lg border border-neutral-700 text-neutral-300 hover:bg-neutral-800 text-sm font-medium transition-colors duration-200"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleExitConfirm}
-                                className="px-5 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-colors duration-200"
-                            >
-                                Yes, Exit
-                            </button>
+                            <h3 className="text-2xl font-bold mb-2 text-white">Exit Interview?</h3>
+                            <p className="text-neutral-400 text-sm mb-8 leading-relaxed max-w-sm">
+                                Are you sure you want to end this live session? Your evaluation context will be aborted entirely.
+                            </p>
+                            <div className="grid grid-cols-2 gap-4 w-full">
+                                <button
+                                    onClick={() => setShowExitModal(false)}
+                                    className="px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-sm font-bold text-neutral-300 hover:bg-white/10 hover:text-white transition-all shadow-inner"
+                                >
+                                    Return to Session
+                                </button>
+                                <button
+                                    onClick={handleExitConfirm}
+                                    className="px-4 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-all shadow-[0_0_30px_-5px_rgba(239,68,68,0.4)] hover:shadow-[0_0_40px_-5px_rgba(239,68,68,0.6)]"
+                                >
+                                    Confirm Exit
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -368,68 +424,72 @@ Rules:
 
             {/* ── Violation Warning Modal ── */}
             {warningModal && !terminated && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-                    <div className="bg-neutral-900 border border-orange-700/60 rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-600/20 flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                                </svg>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                    <div className="absolute inset-0 bg-black/90 backdrop-blur-md"></div>
+                    <div className="relative bg-neutral-950/90 border border-orange-500/50 rounded-3xl w-full max-w-md p-8 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-300 overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent pointer-events-none" />
+                        <div className="flex flex-col items-center text-center relative z-10">
+                            <div className="w-16 h-16 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner animate-[pulse_2s_ease-in-out_infinite]">
+                                <AlertCircle size={32} className="text-orange-400" />
                             </div>
-                            <h2 className="text-lg font-semibold text-white">
+                            <h3 className="text-2xl font-bold mb-2 text-white">
                                 Violation #{warningModal.count} Detected
-                            </h2>
+                            </h3>
+                            <p className="text-neutral-300 text-sm mb-4 font-semibold p-3 bg-white/5 rounded-lg border border-white/10 w-full">
+                                {warningModal.reason}
+                            </p>
+                            <p className="text-orange-400/80 text-xs mb-8">
+                                Warning {warningModal.count} of {MAX_VIOLATIONS}. Session terminates automatically upon {MAX_VIOLATIONS} violations.
+                            </p>
+                            <button
+                                onClick={() => { setWarningModal(null); enterFullscreen(); }}
+                                className="w-full px-4 py-4 rounded-xl bg-orange-500/90 hover:bg-orange-500 text-white text-sm font-bold tracking-wide transition-all shadow-[0_0_30px_-5px_rgba(249,115,22,0.4)]"
+                            >
+                                I Understand — Return to Interview
+                            </button>
                         </div>
-                        <p className="text-neutral-300 text-sm mb-2 font-medium">{warningModal.reason}</p>
-                        <p className="text-orange-400 text-sm mb-6">
-                            Warning {warningModal.count} of {MAX_VIOLATIONS}. Your interview will be <strong>automatically terminated</strong> after {MAX_VIOLATIONS} violations.
-                        </p>
-                        <button
-                            onClick={() => {
-                                setWarningModal(null);
-                                enterFullscreen();
-                            }}
-                            className="w-full px-5 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white text-sm font-medium transition-colors duration-200"
-                        >
-                            I Understand — Return to Interview
-                        </button>
                     </div>
                 </div>
             )}
 
             {/* ── Fullscreen Re-entry Prompt ── */}
             {showFullscreenPrompt && !warningModal && !terminated && (
-                <div className="fixed bottom-6 right-6 z-50 bg-neutral-900 border border-yellow-600/50 rounded-xl p-4 shadow-xl max-w-xs">
-                    <p className="text-yellow-400 text-sm font-medium mb-2">⚠ Fullscreen Required</p>
-                    <p className="text-neutral-400 text-xs mb-3">You must stay in fullscreen during the interview.</p>
-                    <button
-                        onClick={() => { enterFullscreen(); setShowFullscreenPrompt(false); }}
-                        className="w-full text-xs px-3 py-1.5 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-black font-semibold transition-colors"
-                    >
-                        Re-enter Fullscreen
-                    </button>
+                <div className="fixed bottom-8 right-8 z-[100] animate-in slide-in-from-bottom-5 duration-500">
+                    <div className="bg-neutral-950/90 border border-amber-500/30 rounded-2xl p-5 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.8)] backdrop-blur-xl max-w-xs overflow-hidden relative group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent pointer-events-none" />
+                        <p className="text-amber-400 text-xs uppercase tracking-widest font-bold mb-2 flex items-center gap-2">
+                            <ShieldAlert size={14} /> Fullscreen Required
+                        </p>
+                        <p className="text-neutral-400 text-xs mb-4 leading-relaxed">System requires fullscreen lock. Re-enter immediately to prevent violations.</p>
+                        <button
+                            onClick={() => { enterFullscreen(); setShowFullscreenPrompt(false); }}
+                            className="w-full text-xs px-4 py-2.5 rounded-lg bg-amber-500/20 border border-amber-500/30 hover:bg-amber-500 text-amber-300 hover:text-black font-bold transition-all"
+                        >
+                            Re-enter Locked Mode
+                        </button>
+                    </div>
                 </div>
             )}
 
             {/* ── Terminated Modal ── */}
             {terminated && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm">
-                    <div className="bg-neutral-900 border border-red-700 rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center">
-                        <div className="w-14 h-14 rounded-full bg-red-600/20 flex items-center justify-center mx-auto mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl">
+                    <div className="relative text-center animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-md w-full">
+                        <div className="w-24 h-24 bg-red-600/10 border border-red-500/20 rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_0_60px_-15px_rgba(239,68,68,0.5)] animate-pulse">
+                            <AlertCircle size={48} className="text-red-500" />
                         </div>
-                        <h2 className="text-xl font-bold text-white mb-2">Interview Terminated</h2>
-                        <p className="text-neutral-400 text-sm mb-2">
-                            You exceeded the maximum number of allowed violations ({MAX_VIOLATIONS}).
+                        <h2 className="text-4xl font-extrabold mb-4 text-white tracking-tight">Session Terminated</h2>
+                        <p className="text-neutral-400 mb-2 text-base">
+                            Maximum security violations exceeded ({MAX_VIOLATIONS}).
                         </p>
-                        <p className="text-red-400 text-sm mb-6 font-medium">Last violation: {warningModal?.reason}</p>
+                        <div className="p-4 bg-red-950/30 border border-red-900 rounded-xl mb-10 text-xs text-red-400 font-mono text-left block">
+                            Final Strike: {warningModal?.reason}
+                        </div>
                         <button
                             onClick={() => navigate("/ai-interview")}
-                            className="w-full px-5 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-medium transition-colors duration-200"
+                            className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl bg-white text-black font-bold text-sm transition-all hover:bg-neutral-200 shadow-[0_0_40px_-10px_rgba(255,255,255,0.2)] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.4)] hover:-translate-y-0.5"
                         >
-                            Go to Dashboard
+                            Return to Dashboard
                         </button>
                     </div>
                 </div>

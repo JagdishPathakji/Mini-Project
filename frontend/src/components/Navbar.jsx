@@ -31,34 +31,34 @@ export default function Navbar() {
     const isActive = (path) => location.pathname === path;
 
     const navLinks = [
-        { name: "Problems", path: "/dashboard", icon: <BookOpen size={18} /> },
-        { name: "DSA Interview", path: "/dsa-interview", icon: <Code2 size={18} /> },
-        { name: "AI Interview", path: "/ai-interview", icon: <Bot size={18} /> },
-        { name: "1v1 Challenge", path: "/1v1-challenge", icon: <Swords size={18} /> },
+        { name: "Problems", path: "/dashboard", icon: <BookOpen size={16} /> },
+        { name: "DSA Interview", path: "/dsa-interview", icon: <Code2 size={16} /> },
+        { name: "AI Interview", path: "/ai-interview", icon: <Bot size={16} /> },
+        { name: "1v1 Challenge", path: "/1v1-challenge", icon: <Swords size={16} /> },
     ];
 
     return (
-        <nav className="fixed top-0 w-full z-50 border-b border-neutral-900 bg-black/80 backdrop-blur-md">
+        <nav className="fixed top-0 w-full z-50 border-b border-white/[0.05] bg-[#030303]/60 backdrop-blur-xl transition-all">
             <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
                 {/* Logo */}
                 <div className="flex items-center gap-2">
                     <Link to="/dashboard" className="flex items-center gap-2 group">
-                        <div className="w-8 h-8 bg-white rounded-md flex items-center justify-center group-hover:bg-neutral-200 transition-colors">
-                            <span className="text-black font-bold text-xl">N</span>
+                        <div className="w-8 h-8 bg-white/10 border border-white/20 rounded-md flex items-center justify-center group-hover:bg-white/20 transition-all duration-300">
+                            <span className="text-white font-bold text-xl drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]">N</span>
                         </div>
-                        <span className="text-xl font-bold tracking-tight text-white group-hover:text-neutral-300 transition-colors">NexInterview</span>
+                        <span className="text-xl font-bold tracking-tight text-white group-hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.3)] transition-all">NexInterview</span>
                     </Link>
                 </div>
 
                 {/* Center Links */}
-                <div className="hidden md:flex items-center gap-1">
+                <div className="hidden md:flex items-center gap-1.5 p-1 bg-white/[0.02] border border-white/[0.05] rounded-xl shadow-inner backdrop-blur-md">
                     {navLinks.map((link) => (
                         <Link
                             key={link.name}
                             to={link.path}
-                            className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${isActive(link.path)
-                                    ? "bg-neutral-900 text-white"
-                                    : "text-neutral-400 hover:text-white hover:bg-neutral-900/50"
+                            className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 transition-all duration-300 ${isActive(link.path)
+                                    ? "bg-white/10 text-white shadow-[0_0_15px_-3px_rgba(255,255,255,0.1)]"
+                                    : "text-neutral-400 hover:text-white hover:bg-white/[0.05]"
                                 }`}
                         >
                             {link.icon}
@@ -70,17 +70,17 @@ export default function Navbar() {
                 {/* Right Actions */}
                 <div className="flex items-center gap-4">
 
-                    <button className="p-2 rounded-full text-neutral-400 hover:text-white hover:bg-neutral-900 transition-colors">
-                        <User size={20} />
-                    </button>
+                    <Link to="/profile" className="p-2 rounded-xl border border-transparent text-neutral-400 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all">
+                        <User size={18} />
+                    </Link>
 
-                    <div className="h-6 w-[1px] bg-neutral-800 hidden sm:block"></div>
+                    <div className="h-4 w-[1px] bg-white/10 hidden sm:block"></div>
 
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-2 text-sm font-bold text-neutral-400 hover:text-red-500 transition-colors"
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-transparent text-sm font-bold text-neutral-400 hover:text-rose-400 hover:bg-rose-400/10 hover:border-rose-400/20 transition-all"
                     >
-                        <LogOut size={18} />
+                        <LogOut size={16} />
                         <span className="hidden sm:inline">Logout</span>
                     </button>
                 </div>

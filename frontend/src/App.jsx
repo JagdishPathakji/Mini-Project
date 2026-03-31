@@ -11,6 +11,7 @@ import InterviewSetup from "./components/start-interview"
 import InterviewRoom from "./components/InterviewRoom";
 import DSAInterviewSetup from "./components/DSAInterviewSetup";
 import DSAInterviewRoom from "./components/DSAInterviewRoom";
+import Profile from "./components/Profile";
 
 function RequireNoAuth({ children }) {
     const token = localStorage.getItem("token");
@@ -111,6 +112,15 @@ export default function App() {
                     element={
                         <RequireAuth>
                             <DSAInterviewRoom />
+                        </RequireAuth>
+                    }
+                />
+
+                <Route
+                    path="/profile"
+                    element={
+                        <RequireAuth>
+                            <Profile />
                         </RequireAuth>
                     }
                 />
