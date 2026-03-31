@@ -154,7 +154,7 @@ export default function Dashboard() {
                                             <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase border ${diffMeta.bg} ${diffMeta.color} ${diffMeta.border}`}>
                                                 {q.qdifficulty}
                                             </span>
-                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-neutral-600 group-hover:text-blue-400">
+                                            <div className={`transition-all duration-300 ${q.isSolved ? 'opacity-100 text-emerald-400 drop-shadow-[0_0_12px_rgba(52,211,153,0.8)]' : 'opacity-0 group-hover:opacity-100 text-neutral-600 group-hover:text-blue-400'}`}>
                                                 <CheckCircle2 size={18} />
                                             </div>
                                         </div>

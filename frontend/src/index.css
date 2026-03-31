@@ -3,6 +3,10 @@
 @tailwind components;
 @tailwind utilities;
 
+html, body {
+    background-color: #030303;
+}
+
 /* Custom Scrollbar for Webkit Browsers */
 ::-webkit-scrollbar {
     width: 8px;

@@ -9,6 +9,8 @@ import {
     Play,
     Send,
     AlertCircle,
+    TerminalSquare,
+    XCircle,
     CheckCircle2,
     Code2,
     LayoutGrid,
@@ -31,6 +33,13 @@ export default function DSAInterviewRoom() {
     const [showExitConfirm, setShowExitConfirm] = useState(false);
     const [interviewEnded, setInterviewEnded] = useState(false);
     const [activeTab, setActiveTab] = useState("Description");
+    const [leftWidth, setLeftWidth] = useState(50);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [solvedQuestions, setSolvedQuestions] = useState({});
+    const [submissionResult, setSubmissionResult] = useState(null);
+    const [progressPercent, setProgressPercent] = useState(0);
+    const [submitStage, setSubmitStage] = useState("");
+    const [liveTestcases, setLiveTestcases] = useState([]);
 
     const languages = ["python", "javascript", "java", "cpp", "c"];
 
@@ -104,6 +113,92 @@ export default function DSAInterviewRoom() {
         setCodes(newCodes);
     };
 
+    const handleSubmit = async () => {
+        if (!codes[currentIndex].trim()) {
+            toast.error("Please write some code before submitting.");
+            return;
+        }
+
+        setIsSubmitting(true);
+        setActiveTab("Submissions");
+        setSubmissionResult({ status: "running" });
+        setProgressPercent(0);
+        setSubmitStage("Connecting to Matrix...");
+        setLiveTestcases([]);
+        
+        try {
+            const response = await fetch("http://localhost:3000/question/interviewsubmit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    qno: questions[currentIndex].qno,
+                    language: language,
+                    code: codes[currentIndex]
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || "Failed to establish telemetry link");
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const parts = buffer.split("\n\n");
+                buffer = parts.pop();
+
+                for (let part of parts) {
+                    if (part.startsWith("data: ")) {
+                        try {
+                            const data = JSON.parse(part.substring(6));
+
+                            if (data.stage === "running") {
+                                setSubmitStage(`Executing Test Case ${data.testcase} of ${data.total}`);
+                                setProgressPercent((data.testcase / data.total) * 90);
+                                setLiveTestcases(prev => {
+                                    if (prev.find(t => t.id === data.testcase)) return prev;
+                                    return [...prev, { id: data.testcase, status: 'running' }];
+                                });
+                            } else if (data.stage === "passed") {
+                                setLiveTestcases(prev => prev.map(t => 
+                                    t.id === data.testcase ? { ...t, status: 'passed', time: data.time } : t
+                                ));
+                            } else if (data.stage === "completed") {
+                                setProgressPercent(100);
+                                setSubmitStage("Finalizing Telemetry...");
+                                
+                                setTimeout(() => {
+                                    setSubmissionResult(data);
+                                    if (data.status) {
+                                        toast.success(data.message || "All testcases passed!");
+                                        setSolvedQuestions(prev => ({...prev, [currentIndex]: true}));
+                                    } else {
+                                        toast.error(data.message || "Submission failed");
+                                    }
+                                }, 300);
+                            }
+                        } catch (e) {
+                            console.error("Failed to parse SSE JSON:", e, part);
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Submission failed:", error);
+            toast.error(error.message || "Network error");
+            setSubmissionResult({ status: false, message: error.message || "Network error" });
+        } finally {
+            setTimeout(() => setIsSubmitting(false), 500);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-[#030303] flex items-center justify-center">
@@ -114,6 +209,28 @@ export default function DSAInterviewRoom() {
 
     const currentQuestion = questions[currentIndex];
 
+    const startHorizontalDrag = (e) => {
+        e.preventDefault();
+        const startX = e.clientX;
+        const startWidth = leftWidth;
+        const containerWidth = window.innerWidth - 48; // px-6 (24px) * 2
+
+        const doDrag = (e) => {
+            const newWidth = startWidth + ((e.clientX - startX) / containerWidth) * 100;
+            if (newWidth > 20 && newWidth < 80) {
+                setLeftWidth(newWidth);
+            }
+        };
+
+        const stopDrag = () => {
+            document.removeEventListener('mousemove', doDrag);
+            document.removeEventListener('mouseup', stopDrag);
+        };
+
+        document.addEventListener('mousemove', doDrag);
+        document.addEventListener('mouseup', stopDrag);
+    };
+
     return (
         <div className="h-screen bg-[#030303] text-white flex flex-col overflow-hidden relative selection:bg-white selection:text-black">
             <Navbar />
@@ -122,10 +239,10 @@ export default function DSAInterviewRoom() {
             <div className="absolute top-[10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/5 blur-[120px] pointer-events-none" />
             <div className="absolute bottom-[0%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-600/5 blur-[120px] pointer-events-none" />
 
-            <div className="flex flex-col lg:flex-row flex-1 pt-20 pb-6 px-6 gap-6 overflow-hidden relative z-10">
+            <div className="flex flex-col lg:flex-row flex-1 pt-20 pb-6 px-6 gap-2 overflow-hidden relative z-10">
 
                 {/* LEFT PANEL */}
-                <div className="lg:w-1/2 w-full bg-[#0a0a0a] border border-white/10 rounded-3xl flex flex-col h-full overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.4)] relative">
+                <div style={ { '--left-width': `${leftWidth}%` } } className="lg:w-[var(--left-width)] w-full bg-[#0a0a0a] border border-white/10 rounded-3xl flex flex-col h-full overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.4)] relative">
                     <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none z-0" />
 
                     {/* Tabs / Header */}
@@ -148,6 +265,15 @@ export default function DSAInterviewRoom() {
                                     }`}
                             >
                                 <LayoutGrid size={14} className={activeTab === "Question Nav" ? "text-purple-400" : ""} /> Navigation
+                            </button>
+                            <button
+                                onClick={() => setActiveTab("Submissions")}
+                                className={`px-4 py-2 text-[11px] font-bold uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 ${activeTab === "Submissions"
+                                    ? "bg-white/10 text-white shadow-inner"
+                                    : "text-neutral-500 hover:text-white hover:bg-white/5"
+                                    }`}
+                            >
+                                <TerminalSquare size={14} className={activeTab === "Submissions" ? "text-blue-400" : ""} /> Submissions
                             </button>
                         </div>
 
@@ -222,12 +348,19 @@ export default function DSAInterviewRoom() {
                                                 setCurrentIndex(idx);
                                                 setActiveTab("Description");
                                             }}
-                                            className={`w-16 h-16 rounded-2xl border-2 flex items-center justify-center font-bold text-xl transition-all duration-300 ${currentIndex === idx
+                                            className={`w-16 h-16 rounded-2xl border-2 flex items-center justify-center font-bold text-xl transition-all duration-300 relative overflow-hidden group ${currentIndex === idx
                                                 ? "border-white bg-white/10 text-white scale-110 shadow-[0_0_30px_-5px_rgba(255,255,255,0.4)]"
-                                                : "border-white/10 bg-white/[0.02] text-neutral-500 hover:border-white/30 hover:text-white hover:bg-white/5"
+                                                : solvedQuestions[idx] 
+                                                    ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400 hover:border-emerald-500/50 hover:bg-emerald-500/10"
+                                                    : "border-white/10 bg-white/[0.02] text-neutral-500 hover:border-white/30 hover:text-white hover:bg-white/5"
                                                 }`}
                                         >
-                                            {idx + 1}
+                                            {solvedQuestions[idx] && <div className="absolute inset-0 bg-emerald-500/10 pointer-events-none" />}
+                                            {solvedQuestions[idx] && currentIndex !== idx ? (
+                                                <CheckCircle2 size={24} className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.8)] relative z-10" />
+                                            ) : (
+                                                <span className="relative z-10">{idx + 1}</span>
+                                            )}
                                         </button>
                                     ))}
                                 </div>
@@ -247,11 +380,169 @@ export default function DSAInterviewRoom() {
                                 </div>
                             </div>
                         )}
+
+                        {activeTab === "Submissions" && (
+                            <div className="p-8 overflow-y-auto flex-1 space-y-6 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+
+                                {!submissionResult ? (
+                                    <div className="flex flex-col items-center justify-center h-full text-neutral-500 gap-4 mt-20">
+                                        <div className="w-16 h-16 rounded-full border border-dashed border-white/20 flex items-center justify-center">
+                                            <Send size={24} className="text-white/20 ml-1" />
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="text-[11px] font-bold uppercase tracking-[0.2em] mb-2 cursor-pointer">Live Testing</div>
+                                            <div className="text-sm font-medium text-neutral-600">Start by clicking submit</div>
+                                        </div>
+                                    </div>
+                                ) : submissionResult.status === "running" ? (
+                                    <div className="flex flex-col h-full mt-4">
+                                        <div className="flex flex-col items-center gap-6 mb-8 mt-6">
+                                            <div className="relative w-24 h-24 flex items-center justify-center">
+                                                <div className="absolute inset-0 rounded-full border border-white/5 bg-white/[0.02]" />
+                                                <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 border-l-blue-500/50 animate-[spin_2s_linear_infinite]" />
+                                                <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.4)] animate-pulse">
+                                                    <Code2 size={18} className="text-blue-400" />
+                                                </div>
+                                            </div>
+
+                                            <div className="w-full max-w-md flex flex-col items-center gap-4">
+                                                <div className="flex justify-between w-full text-[10px] font-bold uppercase tracking-widest text-neutral-400">
+                                                    <span>{submitStage}</span>
+                                                    <span className="text-blue-400">{Math.round(progressPercent)}%</span>
+                                                </div>
+                                                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                                    <div 
+                                                        className="h-full bg-blue-500 rounded-full transition-all duration-300 relative shadow-[0_0_15px_rgba(59,130,246,0.6)]" 
+                                                        style={{ width: `${progressPercent}%` }}
+                                                    >
+                                                        <div className="absolute top-0 right-0 bottom-0 w-10 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-[shimmer_1.5s_infinite]" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {liveTestcases.length > 0 && (
+                                            <div className="flex-1 bg-[#0a0a0a] border border-white/10 rounded-2xl overflow-hidden shadow-inner flex flex-col relative">
+                                                <div className="px-4 py-3 border-b border-white/5 bg-white/[0.02] flex items-center gap-2 sticky top-0 z-10">
+                                                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Live Telemetry Feed</span>
+                                                </div>
+                                                <div className="overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-white/10">
+                                                    {liveTestcases.map((tc, idx) => (
+                                                        <div key={idx} className="flex items-center justify-between p-3 border-b border-white/5 last:border-0 hover:bg-white/[0.02] transition-colors rounded-xl mx-2">
+                                                            <div className="flex items-center gap-3">
+                                                                {tc.status === 'running' ? (
+                                                                    <div className="w-4 h-4 rounded-full border-2 border-blue-500/30 border-t-blue-500 animate-spin" />
+                                                                ) : tc.status === 'passed' ? (
+                                                                    <CheckCircle2 size={16} className="text-emerald-400" />
+                                                                ) : (
+                                                                    <XCircle size={16} className="text-red-400" />
+                                                                )}
+                                                                <span className="text-sm font-mono text-neutral-300">Test Case {tc.id}</span>
+                                                            </div>
+                                                            <div className="flex flex-col items-end">
+                                                                {tc.time && <span className="text-[10px] font-mono text-neutral-500">{tc.time}s</span>}
+                                                                <span className={`text-[10px] font-bold uppercase tracking-widest ${tc.status === 'running' ? 'text-blue-400 animate-pulse' : tc.status === 'passed' ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                                    {tc.status}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    <div className="h-4" />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : submissionResult.status === true ? (
+                                    <div className="p-8 bg-[#0a0a0a] border border-emerald-500/20 rounded-3xl shadow-[0_0_50px_-10px_rgba(52,211,153,0.15)] mb-4 relative overflow-hidden group">
+                                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
+                                        
+                                        <div className="flex items-center gap-4 mb-8 relative z-10">
+                                            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-[0_0_20px_rgba(52,211,153,0.2)]">
+                                                <CheckCircle2 size={28} className="text-emerald-400" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-2xl font-extrabold text-emerald-400 tracking-tight">Accepted</h2>
+                                                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-400/60 mt-1">{submissionResult.message}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4 relative z-10">
+                                            <div className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                                <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-2">Runtime Telemetry</div>
+                                                <div className="text-3xl font-extrabold text-white flex items-end gap-1">
+                                                    {submissionResult.details?.time ? parseFloat(submissionResult.details.time).toFixed(3) : "0.00"} <span className="text-sm text-neutral-500 mb-1">sec</span>
+                                                </div>
+                                            </div>
+                                            <div className="p-5 bg-white/[0.02] border border-white/5 rounded-2xl">
+                                                <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-2">Memory Profile</div>
+                                                <div className="text-3xl font-extrabold text-white flex items-end gap-1">
+                                                    {submissionResult.details?.memory || "0"} <span className="text-sm text-neutral-500 mb-1">KB</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl shadow-[0_0_30px_-5px_rgba(239,68,68,0.1)] space-y-6 relative">
+                                        <div className="text-red-400 font-bold text-xl flex items-center gap-2">
+                                            <XCircle size={24} />
+                                            <span>Failed</span>
+                                        </div>
+                                        <div className="text-red-400/80 text-sm font-medium">{submissionResult.message}</div>
+
+                                        {submissionResult.failed_testcase && (
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <div className="text-[10px] text-red-400/80 mb-1 uppercase tracking-widest font-bold">Input</div>
+                                                    <pre className="p-4 bg-[#030303] border border-red-500/20 rounded-xl text-sm overflow-x-auto text-neutral-300 font-mono shadow-inner">
+                                                        {submissionResult.failed_testcase.input}
+                                                    </pre>
+                                                </div>
+                                                <div>
+                                                    <div className="text-[10px] text-red-400/80 mb-1 uppercase tracking-widest font-bold">Expected Output</div>
+                                                    <pre className="p-4 bg-[#030303] border border-red-500/20 rounded-xl text-sm overflow-x-auto text-neutral-300 font-mono shadow-inner">
+                                                        {submissionResult.failed_testcase.expected_output}
+                                                    </pre>
+                                                </div>
+                                                {submissionResult.details && submissionResult.details.stdout && (
+                                                    <div>
+                                                        <div className="text-[10px] text-red-400/80 mb-1 uppercase tracking-widest font-bold">Your Output</div>
+                                                        <pre className="p-4 bg-[#030303] border border-red-500/20 rounded-xl text-sm overflow-x-auto text-neutral-300 font-mono shadow-inner">
+                                                            {(() => {
+                                                                try { return typeof window !== 'undefined' ? atob(submissionResult.details.stdout) : submissionResult.details.stdout; } 
+                                                                catch (e) { return submissionResult.details.stdout; }
+                                                            })()}
+                                                        </pre>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                        {submissionResult.details && submissionResult.details.compile_output && (
+                                            <div>
+                                                <div className="text-[10px] text-red-400/80 mb-1 uppercase tracking-widest font-bold">Compiler Output</div>
+                                                <pre className="p-4 bg-[#030303] border border-red-500/30 rounded-xl text-sm overflow-x-auto text-red-400 font-mono shadow-inner whitespace-pre-wrap">
+                                                    {(() => {
+                                                        try { return typeof window !== 'undefined' ? atob(submissionResult.details.compile_output) : submissionResult.details.compile_output; } 
+                                                        catch (e) { return submissionResult.details.compile_output; }
+                                                    })()}
+                                                </pre>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 
+                {/* Horizontal Drag Handle */}
+                <div 
+                    className="hidden lg:block w-2 bg-transparent hover:bg-white/10 cursor-col-resize transition-colors rounded-full z-50 shrink-0"
+                    onMouseDown={startHorizontalDrag}
+                />
+
                 {/* RIGHT PANEL */}
-                <div className="lg:w-1/2 w-full flex flex-col bg-[#0a0a0a] border border-white/10 rounded-3xl h-full overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.4)] relative">
+                <div style={ { '--right-width': `${100 - leftWidth}%` } } className="lg:w-[var(--right-width)] w-full flex flex-col bg-[#0a0a0a] border border-white/10 rounded-3xl h-full overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.4)] relative">
                     <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none z-0" />
 
                     {/* Editor Header */}
@@ -295,13 +586,19 @@ export default function DSAInterviewRoom() {
                             )}
                         </div>
 
-                        {/* Run & Submit */}
+                        {/* Submit Button */}
                         <div className="flex items-center gap-3">
-                            <button className="px-4 py-2 border border-white/10 bg-white/5 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 text-neutral-300 shadow-sm">
-                                <Play size={14} className="text-emerald-400" /> Run
-                            </button>
-                            <button className="px-6 py-2 bg-white text-black rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 shadow-[0_0_20px_-5px_rgba(255,255,255,0.4)] hover:shadow-[0_0_30px_-5px_rgba(255,255,255,0.6)] hover:-translate-y-0.5">
-                                <Send size={14} /> Submit
+                            <button 
+                                onClick={handleSubmit}
+                                disabled={isSubmitting}
+                                className={`px-6 py-2 bg-white text-black rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 shadow-[0_0_20px_-5px_rgba(255,255,255,0.4)] ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-[0_0_30px_-5px_rgba(255,255,255,0.6)] hover:-translate-y-0.5'}`}
+                            >
+                                {isSubmitting ? (
+                                    <div className="w-3 h-3 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                    <Send size={14} />
+                                )}
+                                {isSubmitting ? "Evaluating" : "Submit"}
                             </button>
                         </div>
                     </div>
