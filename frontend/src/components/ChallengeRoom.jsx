@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useBlocker } from "react-router-dom";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
 import Editor from "@monaco-editor/react";
@@ -58,6 +58,35 @@ export default function ChallengeRoom() {
     useEffect(() => {
         if (!roomId || !initQ) { navigate("/1v1-challenge"); }
     }, [roomId, initQ, navigate]);
+
+    // ─── NAVIGATION GUARD ──────────────────────────────────────────────
+    // Block internal navigation (Navbar clicks, router-link, etc.)
+    const blocker = useBlocker(
+        ({ nextLocation, currentLocation }) =>
+            !matchOver && nextLocation.pathname !== currentLocation.pathname
+    );
+
+    // Block external navigation (Refreshes, closing tab)
+    useEffect(() => {
+        if (matchOver) return;
+        const handleBeforeUnload = (e) => {
+            e.preventDefault();
+            e.returnValue = ""; // Standard requirement for prompt
+        };
+        window.addEventListener("beforeunload", handleBeforeUnload);
+        return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+    }, [matchOver]);
+
+    const handleConfirmLeave = () => {
+        // Emit give up so opponent wins
+        socketRef.current?.emit("give-up", { roomId });
+        // Allow navigation to proceed
+        blocker.proceed?.();
+    };
+
+    const handleCancelLeave = () => {
+        blocker.reset?.();
+    };
 
     // Socket setup
     useEffect(() => {
@@ -578,6 +607,42 @@ export default function ChallengeRoom() {
                             <div className="grid grid-cols-2 gap-4 w-full">
                                 <button onClick={() => setShowGiveUpConfirm(false)} className="px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-sm font-bold text-neutral-300 hover:bg-white/10 transition-all">Cancel</button>
                                 <button onClick={handleGiveUp} className="px-4 py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold transition-all shadow-[0_0_30px_-5px_rgba(239,68,68,0.4)]">Confirm</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Leaving Confirmation Modal (Navigation Guard) */}
+            {blocker.state === "blocked" && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="w-full max-w-md bg-[#0d0d0d] border border-white/10 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+                        {/* Background glow */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 blur-[60px] pointer-events-none" />
+                        
+                        <div className="relative z-10 flex flex-col items-center text-center">
+                            <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-6">
+                                <AlertCircle size={32} className="text-rose-500" />
+                            </div>
+                            
+                            <h3 className="text-2xl font-bold text-white mb-3">Leave Challenge?</h3>
+                            <p className="text-neutral-400 text-sm leading-relaxed mb-8">
+                                Navigating away will declare you as <span className="text-rose-400 font-bold">forfeited</span>. 
+                                Your opponent will win the match immediately. Are you sure?
+                            </p>
+                            
+                            <div className="grid grid-cols-2 gap-4 w-full">
+                                <button
+                                    onClick={handleCancelLeave}
+                                    className="px-6 py-3.5 rounded-2xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all"
+                                >
+                                    Stay & Solve
+                                </button>
+                                <button
+                                    onClick={handleConfirmLeave}
+                                    className="px-6 py-3.5 rounded-2xl bg-rose-500 text-white font-bold hover:bg-rose-600 shadow-[0_0_20px_rgba(244,63,94,0.3)] transition-all"
+                                >
+                                    Leave & Give Up
+                                </button>
                             </div>
                         </div>
                     </div>
