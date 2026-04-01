@@ -35,10 +35,11 @@ export default function Login() {
 
         if (data.status === true) {
           localStorage.setItem("token", data.token);
-          // Also set role/user info if needed, or rely on token decoding
+          localStorage.setItem("role", role);
+          localStorage.setItem("userId", data.userId);
           toast.success("Logged in successfully!");
           setTimeout(() => {
-            navigate("/dashboard");
+            navigate(role === "admin" ? "/admin-panel" : "/dashboard");
           }, 1000);
         }
         else {
@@ -129,10 +130,10 @@ export default function Login() {
                     <select
                       value={role}
                       onChange={(e) => setRole(e.target.value)}
-                      className="w-full bg-transparent text-white appearance-none focus:outline-none transition-all text-sm cursor-pointer"
+                      className="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none"
                     >
-                      <option value="student" className="bg-[#0a0a0a]">User</option>
-                      <option value="admin" className="bg-[#0a0a0a]">Admin</option>
+                      <option value="student">User</option>
+                      <option value="admin">Admin</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-neutral-500">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>

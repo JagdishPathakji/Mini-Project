@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { LogOut, User, Code2, Bot, Swords, BookOpen } from "lucide-react";
+import { LogOut, User, Code2, Bot, Swords, BookOpen, Shield, Menu, X } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function Navbar() {
     const navigate = useNavigate();
     const location = useLocation();
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     const handleLogout = async () => {
         try {
@@ -30,16 +32,19 @@ export default function Navbar() {
 
     const isActive = (path) => location.pathname === path;
 
+    const role = localStorage.getItem("role");
+    const adminLink = role === "admin" ? { name: "Admin Panel", path: "/admin-panel", icon: <Shield size={16} /> } : null;
     const navLinks = [
         { name: "Problems", path: "/dashboard", icon: <BookOpen size={16} /> },
         { name: "DSA Interview", path: "/dsa-interview", icon: <Code2 size={16} /> },
         { name: "AI Interview", path: "/ai-interview", icon: <Bot size={16} /> },
         { name: "1v1 Challenge", path: "/1v1-challenge", icon: <Swords size={16} /> },
-    ];
+        adminLink,
+    ].filter(Boolean);
 
     return (
         <nav className="fixed top-0 w-full z-50 border-b border-white/[0.05] bg-[#030303]/60 backdrop-blur-xl transition-all">
-            <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
                 {/* Logo */}
                 <div className="flex items-center gap-2">
                     <Link to="/dashboard" className="flex items-center gap-2 group">
@@ -50,7 +55,7 @@ export default function Navbar() {
                     </Link>
                 </div>
 
-                {/* Center Links */}
+                {/* Center Links (Desktop) */}
                 <div className="hidden md:flex items-center gap-1.5 p-1 bg-white/[0.02] border border-white/[0.05] rounded-xl shadow-inner backdrop-blur-md">
                     {navLinks.map((link) => (
                         <Link
@@ -68,8 +73,7 @@ export default function Navbar() {
                 </div>
 
                 {/* Right Actions */}
-                <div className="flex items-center gap-4">
-
+                <div className="flex items-center gap-2 sm:gap-4">
                     <Link to="/profile" className="p-2 rounded-xl border border-transparent text-neutral-400 hover:text-white hover:bg-white/5 hover:border-white/10 transition-all">
                         <User size={18} />
                     </Link>
@@ -78,13 +82,53 @@ export default function Navbar() {
 
                     <button
                         onClick={handleLogout}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-transparent text-sm font-bold text-neutral-400 hover:text-rose-400 hover:bg-rose-400/10 hover:border-rose-400/20 transition-all"
+                        className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border border-transparent text-sm font-bold text-neutral-400 hover:text-rose-400 hover:bg-rose-400/10 hover:border-rose-400/20 transition-all"
                     >
                         <LogOut size={16} />
-                        <span className="hidden sm:inline">Logout</span>
+                        Logout
+                    </button>
+
+                    {/* Mobile Menu Button */}
+                    <button
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        className="md:hidden p-2 rounded-xl text-neutral-400 hover:text-white hover:bg-white/5 transition-all"
+                    >
+                        {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
                     </button>
                 </div>
             </div>
+
+            {/* Mobile Dropdown Menu */}
+            {isMenuOpen && (
+                <div className="md:hidden border-t border-white/[0.05] bg-[#030303] px-4 py-6 space-y-4 animate-in slide-in-from-top-4 duration-300">
+                    <div className="flex flex-col gap-2">
+                        {navLinks.map((link) => (
+                            <Link
+                                key={link.name}
+                                to={link.path}
+                                onClick={() => setIsMenuOpen(false)}
+                                className={`px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 border transition-all ${isActive(link.path)
+                                        ? "bg-white/10 border-white/20 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)]"
+                                        : "text-neutral-400 border-transparent hover:text-white hover:bg-white/[0.03]"
+                                    }`}
+                            >
+                                <span className="p-1.5 rounded-lg bg-white/5">{link.icon}</span>
+                                {link.name}
+                            </Link>
+                        ))}
+                    </div>
+
+                    <div className="pt-4 border-t border-white/[0.05]">
+                        <button
+                            onClick={() => { handleLogout(); setIsMenuOpen(false); }}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-rose-400 bg-rose-400/5 border border-rose-400/10 hover:bg-rose-400/10 transition-all"
+                        >
+                            <span className="p-1.5 rounded-lg bg-rose-400/10"><LogOut size={16} /></span>
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            )}
         </nav>
     );
 }

@@ -14,6 +14,7 @@ import DSAInterviewRoom from "./components/DSAInterviewRoom";
 import Profile from "./components/Profile";
 import ChallengeSetup from "./components/ChallengeSetup";
 import ChallengeRoom from "./components/ChallengeRoom";
+import AdminPanel from "./components/AdminPanel";
 
 function RequireNoAuth({ children }) {
     const token = localStorage.getItem("token");
@@ -124,6 +125,16 @@ const router = createBrowserRouter([
             <RequireAuth>
                 <ChallengeRoom />
             </RequireAuth>
+        ),
+    },
+    {
+        path: "/admin-panel",
+        element: localStorage.getItem("role") === "admin" ? (
+            <RequireAuth>
+                <AdminPanel />
+            </RequireAuth>
+        ) : (
+            <Navigate to="/login" replace />
         ),
     },
     {

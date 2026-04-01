@@ -29,7 +29,7 @@ const userlogin = async (req, res) => {
         if (!isMatch)
             return res.status(401).send({ status: false, message: "Invalid Credentials" })
 
-        const token = jwt.sign({ id: databaseResult._id, email: userData.email, role: userData.role }, process.env.JWT_SECRET_KEY, { expiresIn: "1d" })
+        const token = jwt.sign({ id: databaseResult._id, email: userData.email, role: databaseResult.role }, process.env.JWT_SECRET_KEY, { expiresIn: "1d" })
         console.log("token is : ", token)
         res.cookie("token", token, {
             httpOnly: true,
@@ -40,7 +40,8 @@ const userlogin = async (req, res) => {
 
         res.status(200).send({
             status: true,
-            message: "User Login Successful"
+            message: "User Login Successful",
+            userId: databaseResult._id
         })
     }
     catch (error) {
