@@ -18,11 +18,7 @@ async function saveSubmission(req, qno, code, language, status, time, memory) {
                 userId = decoded.id || decoded._id;
             } catch (e) {}
         }
-        if (!userId) {
-            const defaultUser = await user.findOne();
-            if (defaultUser) userId = defaultUser._id;
-        }
-        if (!userId) return; // Cannot save without any user in DB
+        if (!userId) return; // Cannot save without authenticated user
 
         let statusMapped = "runtime error";
         const sLower = status.toLowerCase();
@@ -247,10 +243,6 @@ const fetchquestion = async (req, res) => {
                 userId = decoded.id || decoded._id;
             } catch (e) {}
         }
-        if (!userId) {
-            const defaultUser = await user.findOne();
-            if (defaultUser) userId = defaultUser._id;
-        }
 
         doc.isSolved = false;
         if (userId) {
@@ -305,10 +297,6 @@ const fetchallquestion = async (req, res) => {
                 const decoded = jwt.verify(req.cookies.token, process.env.JWT_SECRET_KEY);
                 userId = decoded.id || decoded._id;
             } catch (e) {}
-        }
-        if (!userId) {
-            const defaultUser = await user.findOne();
-            if (defaultUser) userId = defaultUser._id;
         }
 
         if (userId && docs.length > 0) {
@@ -556,10 +544,6 @@ const fetchsubmissionshistory = async (req, res) => {
                 const decoded = jwt.verify(req.cookies.token, process.env.JWT_SECRET_KEY);
                 userId = decoded.id || decoded._id;
             } catch (e) {}
-        }
-        if (!userId) {
-            const defaultUser = await user.findOne();
-            if (defaultUser) userId = defaultUser._id;
         }
 
         if (!userId) return res.status(200).json({ status: true, history: [] });

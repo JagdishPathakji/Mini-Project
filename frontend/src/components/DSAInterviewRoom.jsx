@@ -27,8 +27,16 @@ export default function DSAInterviewRoom() {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [loading, setLoading] = useState(true);
     const [timeLeft, setTimeLeft] = useState(duration * 60);
-    const [codes, setCodes] = useState(["", "", ""]);
-    const [language, setLanguage] = useState("python");
+    const [codes, setCodes] = useState(() => {
+        try {
+            const savedLang = sessionStorage.getItem(`interview_lang_${difficulty}`) || "python";
+            const saved = sessionStorage.getItem(`interview_codes_${difficulty}_${savedLang}`);
+            return saved ? JSON.parse(saved) : ["", "", ""];
+        } catch { return ["", "" ,""]; }
+    });
+    const [language, setLanguage] = useState(() => {
+        return sessionStorage.getItem(`interview_lang_${difficulty}`) || "python";
+    });
     const [showLangDropdown, setShowLangDropdown] = useState(false);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
     const [interviewEnded, setInterviewEnded] = useState(false);
@@ -54,11 +62,15 @@ export default function DSAInterviewRoom() {
 
                 if (data.status) {
                     setQuestions(data.doc);
-                    if ("python" === language) {
-                        setCodes(data.doc.map(q => "# Start writing your code here"));
-                    }
-                    else {
-                        setCodes(data.doc.map(q => "// Start writing your code here"));
+                    // Only set defaults if no saved codes exist for the current language
+                    const savedLang = sessionStorage.getItem(`interview_lang_${difficulty}`) || "python";
+                    const savedCodes = sessionStorage.getItem(`interview_codes_${difficulty}_${savedLang}`);
+                    if (!savedCodes || JSON.parse(savedCodes).every(c => !c)) {
+                        if (savedLang === "python") {
+                            setCodes(data.doc.map(() => "# Start writing your code here"));
+                        } else {
+                            setCodes(data.doc.map(() => "// Start writing your code here"));
+                        }
                     }
                     setLoading(false);
                 } else {
@@ -74,6 +86,16 @@ export default function DSAInterviewRoom() {
 
         fetchInterviewQuestions();
     }, [difficulty, navigate]);
+
+    // Persist codes to sessionStorage (keyed by difficulty + language)
+    useEffect(() => {
+        sessionStorage.setItem(`interview_codes_${difficulty}_${language}`, JSON.stringify(codes));
+    }, [codes, difficulty, language]);
+
+    // Persist language to sessionStorage
+    useEffect(() => {
+        sessionStorage.setItem(`interview_lang_${difficulty}`, language);
+    }, [language, difficulty]);
 
     // Timer Logic
     useEffect(() => {
@@ -566,16 +588,22 @@ export default function DSAInterviewRoom() {
                                         <div
                                             key={lang}
                                             onClick={() => {
-                                                setLanguage(lang);
+                                                // Save current codes for the current language before switching
+                                                sessionStorage.setItem(`interview_codes_${difficulty}_${language}`, JSON.stringify(codes));
                                                 setShowLangDropdown(false);
+                                                setLanguage(lang);
 
-                                                const newCodes = [...codes];
-                                                if (lang === "python") {
-                                                    newCodes[currentIndex] = "# start writing your code here";
-                                                } else {
-                                                    newCodes[currentIndex] = "// start writing your code here";
+                                                // Restore saved codes for the target language, or use placeholder
+                                                const savedCodes = sessionStorage.getItem(`interview_codes_${difficulty}_${lang}`);
+                                                if (savedCodes) {
+                                                    const parsed = JSON.parse(savedCodes);
+                                                    if (parsed.some(c => c)) {
+                                                        setCodes(parsed);
+                                                        return;
+                                                    }
                                                 }
-                                                setCodes(newCodes);
+                                                const placeholder = lang === "python" ? "# Start writing your code here" : "// Start writing your code here";
+                                                setCodes(codes.map(() => placeholder));
                                             }}
                                             className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-neutral-300 hover:bg-white/10 hover:text-white cursor-pointer transition-colors"
                                         >

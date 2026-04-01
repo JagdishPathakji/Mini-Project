@@ -12,8 +12,14 @@ export default function Solve() {
 
     const [question, setQuestion] = useState(null);
     const [activeTab, setActiveTab] = useState("Description");
-    const [language, setLanguage] = useState("python");
-    const [code, setCode] = useState("");
+    const [language, setLanguage] = useState(() => {
+        return sessionStorage.getItem(`solve_lang_${qno}`) || "python";
+    });
+    const [code, setCode] = useState(() => {
+        const savedLang = sessionStorage.getItem(`solve_lang_${qno}`) || "python";
+        const saved = sessionStorage.getItem(`solve_code_${qno}_${savedLang}`);
+        return saved || "";
+    });
     const [showLangDropdown, setShowLangDropdown] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submissionResult, setSubmissionResult] = useState(null);
@@ -51,6 +57,7 @@ export default function Solve() {
         try {
             const response = await fetch("http://localhost:3000/question/runcode", {
                 method: "POST",
+                credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ qno, code, language, testcases: sampleTestcases })
             });
@@ -85,6 +92,7 @@ export default function Solve() {
         try {
             const response = await fetch("http://localhost:3000/question/questionsubmitted", {
                 method: "POST",
+                credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ qno, code, language })
             });
@@ -163,16 +171,34 @@ export default function Solve() {
         }
     };
 
+    // Persist code to sessionStorage on every change (keyed by qno + language)
+    useEffect(() => {
+        if (code) {
+            sessionStorage.setItem(`solve_code_${qno}_${language}`, code);
+        }
+    }, [code, qno, language]);
+
+    // Persist language to sessionStorage
+    useEffect(() => {
+        sessionStorage.setItem(`solve_lang_${qno}`, language);
+    }, [language, qno]);
+
     async function fetchQuestion() {
         try {
             const response = await fetch(
-                `http://localhost:3000/question/fetchquestion?qno=${qno}`
+                `http://localhost:3000/question/fetchquestion?qno=${qno}`,
+                { credentials: "include" }
             );
             const data = await response.json();
 
             if (data.status) {
                 setQuestion(data.doc);
-                setCode("# Start writing your code here");
+                // Only set default code if no saved code exists for current language
+                const savedCode = sessionStorage.getItem(`solve_code_${qno}_${language}`);
+                if (!savedCode) {
+                    const defaultCode = language === "python" ? "# Start writing your code here" : "// Start writing your code here";
+                    setCode(defaultCode);
+                }
                 if (data.doc.sampleTestcases) {
                     setSampleTestcases(data.doc.sampleTestcases);
                 }
@@ -190,7 +216,7 @@ export default function Solve() {
     useEffect(() => {
         if (activeTab === "Submissions" && qno && !isSubmitting) {
             setIsLoadingHistory(true);
-            fetch(`http://localhost:3000/question/fetchsubmissionshistory?qno=${qno}`)
+            fetch(`http://localhost:3000/question/fetchsubmissionshistory?qno=${qno}`, { credentials: "include" })
                 .then(res => res.json())
                 .then(data => {
                     if (data.status) {
@@ -370,7 +396,7 @@ export default function Solve() {
                                             <h3 className="text-[11px] font-bold uppercase tracking-widest text-neutral-400">Submission History</h3>
                                             <button onClick={() => {
                                                 setIsLoadingHistory(true);
-                                                fetch(`http://localhost:3000/question/fetchsubmissionshistory?qno=${qno}`).then(res=>res.json()).then(data=>setSubmissionHistory(data.history||[])).finally(()=>setIsLoadingHistory(false));
+                                                fetch(`http://localhost:3000/question/fetchsubmissionshistory?qno=${qno}`, { credentials: "include" }).then(res=>res.json()).then(data=>setSubmissionHistory(data.history||[])).finally(()=>setIsLoadingHistory(false));
                                             }} className="text-[10px] text-blue-400 hover:text-blue-300">Refresh</button>
                                         </div>
                                         
@@ -623,17 +649,19 @@ export default function Solve() {
                                         <div
                                             key={lang}
                                             onClick={() => {
-                                                setLanguage(lang);
+                                                // Save current code for current language before switching
+                                                sessionStorage.setItem(`solve_code_${qno}_${language}`, code);
                                                 setShowLangDropdown(false);
+                                                setLanguage(lang);
 
-                                                if (lang === "python") {
-                                                    setCode(
-                                                        "# Start writing your code here"
-                                                    );
+                                                // Restore saved code for the target language, or use placeholder
+                                                const savedCode = sessionStorage.getItem(`solve_code_${qno}_${lang}`);
+                                                if (savedCode) {
+                                                    setCode(savedCode);
+                                                } else if (lang === "python") {
+                                                    setCode("# Start writing your code here");
                                                 } else {
-                                                    setCode(
-                                                        "// Start writing your code here"
-                                                    );
+                                                    setCode("// Start writing your code here");
                                                 }
                                             }}
                                             className="px-4 py-3 text-[11px] font-bold uppercase tracking-widest text-neutral-300 hover:bg-white/10 hover:text-white cursor-pointer transition-colors"

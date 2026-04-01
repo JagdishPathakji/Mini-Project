@@ -12,9 +12,7 @@ const getprofile = async (req, res) => {
             } catch (e) {}
         }
         if (!userId) {
-            const defaultUser = await user.findOne();
-            if (defaultUser) userId = defaultUser._id;
-            else return res.status(401).json({ status: false, message: "Unauthorized" });
+            return res.status(401).json({ status: false, message: "Unauthorized" });
         }
 
         const userData = await user.findById(userId).select("-password -__v");
