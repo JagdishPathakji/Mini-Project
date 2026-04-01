@@ -12,6 +12,8 @@ import InterviewRoom from "./components/InterviewRoom";
 import DSAInterviewSetup from "./components/DSAInterviewSetup";
 import DSAInterviewRoom from "./components/DSAInterviewRoom";
 import Profile from "./components/Profile";
+import ChallengeSetup from "./components/ChallengeSetup";
+import ChallengeRoom from "./components/ChallengeRoom";
 
 function RequireNoAuth({ children }) {
     const token = localStorage.getItem("token");
@@ -121,6 +123,24 @@ export default function App() {
                     element={
                         <RequireAuth>
                             <Profile />
+                        </RequireAuth>
+                    }
+                />
+
+                <Route
+                    path="/1v1-challenge"
+                    element={
+                        <RequireAuth>
+                            <ChallengeSetup />
+                        </RequireAuth>
+                    }
+                />
+
+                <Route
+                    path="/challenge-room"
+                    element={
+                        <RequireAuth>
+                            <ChallengeRoom />
                         </RequireAuth>
                     }
                 />
