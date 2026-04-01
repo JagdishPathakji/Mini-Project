@@ -29,6 +29,9 @@ const userlogin = async (req, res) => {
         if (!isMatch)
             return res.status(401).send({ status: false, message: "Invalid Credentials" })
 
+        if (userData.role !== databaseResult.role)
+            return res.status(401).send({ status: false, message: "Authentication failed: Role mismatch" })
+
         const token = jwt.sign({ id: databaseResult._id, email: userData.email, role: databaseResult.role }, process.env.JWT_SECRET_KEY, { expiresIn: "1d" })
         console.log("token is : ", token)
         res.cookie("token", token, {

@@ -7,7 +7,7 @@ export default function Login() {
     
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [role, setRole] = useState("student");
+    const [role, setRole] = useState("user");
     const [loading, setLoading] = useState(false);
     const [show, setShow] = useState(false);
 
@@ -132,7 +132,7 @@ export default function Login() {
                       onChange={(e) => setRole(e.target.value)}
                       className="w-full bg-[#0a0a0a] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none"
                     >
-                      <option value="student">User</option>
+                      <option value="user">User</option>
                       <option value="admin">Admin</option>
                     </select>
                     <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-neutral-500">
