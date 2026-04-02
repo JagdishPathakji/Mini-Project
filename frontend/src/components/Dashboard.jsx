@@ -13,7 +13,7 @@ import {
     Code2,
     ChevronDown
 } from "lucide-react";
-import { API_BASE_URL } from "../config";
+import { API_BASE_URL, COMMON_HEADERS } from "../config";
 
 import Navbar from "./Navbar";
 
@@ -33,9 +33,7 @@ export default function Dashboard() {
             const response = await fetch(`${API_BASE_URL}/question/fetchallquestion?windowno=${windowNumber}`, {
                 credentials: "include",
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json"
-                }
+                headers: COMMON_HEADERS
             });
             const data = await response.json();
             if (data.status) {

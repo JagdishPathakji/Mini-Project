@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Loader2, ArrowLeft, KeyRound, ChevronRight } from "lucide-react";
-import { API_BASE_URL } from "../config";
+import { API_BASE_URL, COMMON_HEADERS } from "../config";
 
 export default function VerifyOtp() {
   const [otp, setOtp] = useState("");
@@ -26,9 +26,7 @@ export default function VerifyOtp() {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/verifyemail`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: COMMON_HEADERS,
         body: JSON.stringify({
           otp,
           email

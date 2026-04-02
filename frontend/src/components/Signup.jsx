@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { ArrowLeft, Loader2, Mail, Lock, User, ShieldCheck, ChevronRight } from "lucide-react";
-import { API_BASE_URL } from "../config";
+import { API_BASE_URL, COMMON_HEADERS } from "../config";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -25,9 +25,7 @@ export default function Signup() {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/usersignup`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: COMMON_HEADERS,
         body: JSON.stringify({
           email,
           password,

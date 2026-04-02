@@ -3,7 +3,7 @@ import toast from "react-hot-toast";
 import { useParams } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import { Play, Send, ChevronDown, CheckCircle2, XCircle, Code2, TerminalSquare, Clock, ArrowLeft } from "lucide-react";
-import { API_BASE_URL } from "../config";
+import { API_BASE_URL, COMMON_HEADERS } from "../config";
 import Navbar from "./Navbar";
 import AIAssistant from "./AIAssistant";
 import confetti from "canvas-confetti";
@@ -59,7 +59,7 @@ export default function Solve() {
             const response = await fetch(`${API_BASE_URL}/question/runcode`, {
                 method: "POST",
                 credentials: "include",
-                headers: { "Content-Type": "application/json" },
+                headers: COMMON_HEADERS,
                 body: JSON.stringify({ qno, code, language, testcases: sampleTestcases })
             });
 
@@ -94,7 +94,7 @@ export default function Solve() {
             const response = await fetch(`${API_BASE_URL}/question/questionsubmitted`, {
                 method: "POST",
                 credentials: "include",
-                headers: { "Content-Type": "application/json" },
+                headers: COMMON_HEADERS,
                 body: JSON.stringify({ qno, code, language })
             });
 
@@ -188,7 +188,7 @@ export default function Solve() {
         try {
             const response = await fetch(
                 `${API_BASE_URL}/question/fetchquestion?qno=${qno}`,
-                { credentials: "include" }
+                { credentials: "include", headers: COMMON_HEADERS }
             );
             const data = await response.json();
 
@@ -217,7 +217,7 @@ export default function Solve() {
     useEffect(() => {
         if (activeTab === "Submissions" && qno && !isSubmitting) {
             setIsLoadingHistory(true);
-            fetch(`${API_BASE_URL}/question/fetchsubmissionshistory?qno=${qno}`, { credentials: "include" })
+            fetch(`${API_BASE_URL}/question/fetchsubmissionshistory?qno=${qno}`, { credentials: "include", headers: COMMON_HEADERS })
                 .then(res => res.json())
                 .then(data => {
                     if (data.status) {
@@ -397,7 +397,7 @@ export default function Solve() {
                                             <h3 className="text-[11px] font-bold uppercase tracking-widest text-neutral-400">Submission History</h3>
                                             <button onClick={() => {
                                                 setIsLoadingHistory(true);
-                                                fetch(`${API_BASE_URL}/question/fetchsubmissionshistory?qno=${qno}`, { credentials: "include" }).then(res=>res.json()).then(data=>setSubmissionHistory(data.history||[])).finally(()=>setIsLoadingHistory(false));
+                                                fetch(`${API_BASE_URL}/question/fetchsubmissionshistory?qno=${qno}`, { credentials: "include", headers: COMMON_HEADERS }).then(res=>res.json()).then(data=>setSubmissionHistory(data.history||[])).finally(()=>setIsLoadingHistory(false));
                                             }} className="text-[10px] text-blue-400 hover:text-blue-300">Refresh</button>
                                         </div>
                                         

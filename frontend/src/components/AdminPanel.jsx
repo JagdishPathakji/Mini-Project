@@ -16,6 +16,11 @@ const API = API_BASE_URL;
 const authHeaders = { "Content-Type": "application/json" };
 const authOpts = { credentials: "include" };
 
+const COMMON_HEADERS = {
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true"
+};
+
 const DIFF_META = {
     Easy:   { color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/30" },
     Medium: { color: "text-amber-400",   bg: "bg-amber-400/10",   border: "border-amber-400/30"   },
@@ -168,7 +173,7 @@ function QuestionDrawer({ editQuestion = null, onClose, onSuccess }) {
         const fetchFull = async () => {
             setFetchingTCs(true);
             try {
-                const res = await fetch(`${API}/admin/question/${editQuestion.qno}`, { headers: authHeaders, ...authOpts });
+                const res = await fetch(`${API}/admin/question/${editQuestion.qno}`, { headers: COMMON_HEADERS, ...authOpts });
                 const data = await res.json();
                 if (data.status && data.doc.qinput_output?.length > 0) {
                     setTestcases(data.doc.qinput_output);
@@ -214,7 +219,7 @@ function QuestionDrawer({ editQuestion = null, onClose, onSuccess }) {
             const url    = isEdit ? `${API}/admin/updatequestion/${editQuestion.qno}` : `${API}/admin/addquestion`;
             const method = isEdit ? "PUT" : "POST";
 
-            const res  = await fetch(url, { method, headers: authHeaders, ...authOpts, body: JSON.stringify(payload) });
+            const res  = await fetch(url, { method, headers: COMMON_HEADERS, ...authOpts, body: JSON.stringify(payload) });
             const data = await res.json();
             if (data.status) {
                 toast.success(data.message);
@@ -469,7 +474,7 @@ function OverviewTab() {
     useEffect(() => {
         (async () => {
             try {
-                const res = await fetch(`${API}/admin/stats`, { headers: authHeaders, ...authOpts });
+                const res = await fetch(`${API}/admin/stats`, { headers: COMMON_HEADERS, ...authOpts });
                 const data = await res.json();
                 if (data.status) setStats(data.stats);
                 else toast.error("Failed to load stats.");
@@ -557,7 +562,7 @@ function BulkImportModal({ onClose, onSuccess }) {
         if (!parsed) return;
         setLoading(true);
         try {
-            const res  = await fetch(`${API}/admin/bulkimport`, { method:"POST", headers: authHeaders, ...authOpts, body: JSON.stringify({ questions: parsed }) });
+            const res  = await fetch(`${API}/admin/bulkimport`, { method:"POST", headers: COMMON_HEADERS, ...authOpts, body: JSON.stringify({ questions: parsed }) });
             const data = await res.json();
             if (data.status) { setResult(data); toast.success(data.message); onSuccess(); }
             else toast.error(data.message || "Import failed.");
@@ -624,7 +629,7 @@ function QuestionsTab() {
     const fetchQuestions = useCallback(async (p = 1) => {
         setLoading(true);
         try {
-            const res  = await fetch(`${API}/admin/questions?page=${p}&limit=15`, { headers: authHeaders, ...authOpts });
+            const res  = await fetch(`${API}/admin/questions?page=${p}&limit=15`, { headers: COMMON_HEADERS, ...authOpts });
             const data = await res.json();
             if (data.status) { setQuestions(data.doc); setTotalPages(data.pages || 1); setTotal(data.total || 0); }
             else toast.error("Failed to load questions.");
@@ -939,25 +944,15 @@ function UsersTab() {
                         <div className="md:hidden divide-y divide-white/[0.05]">
                             {filtered.map((u, idx) => (
                                 <div key={u._id || idx} className="p-4 space-y-4 hover:bg-white/[0.02] transition-colors">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30 border border-white/10 flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-lg">
-                                                {((u.firstname?.[0] || "") + (u.lastname?.[0] || "")).toUpperCase() || u.username?.[0]?.toUpperCase() || "?"}
-                                            </div>
-                                            <div>
-                                                <p className="text-white font-bold text-sm tracking-tight">{u.firstname} {u.lastname}</p>
-                                                <p className="text-neutral-500 text-[11px]">@{u.username}</p>
-                                            </div>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30 border border-white/10 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                                            {((u.firstname?.[0] || "") + (u.lastname?.[0] || "")).toUpperCase() || u.username?.[0]?.toUpperCase() || "?"}
                                         </div>
-                                        <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border ${
-                                            u.role === "admin"
-                                                ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
-                                                : "bg-neutral-500/10 text-neutral-400 border-neutral-500/20"
-                                        }`}>
-                                            {u.role}
-                                        </span>
+                                        <div>
+                                            <p className="text-white font-bold text-sm tracking-tight">{u.firstname} {u.lastname}</p>
+                                            <p className="text-neutral-500 text-[11px]">@{u.username}</p>
+                                        </div>
                                     </div>
-
                                     <div className="bg-white/[0.03] rounded-xl p-3 border border-white/[0.05] space-y-2">
                                         <div className="flex items-center gap-2 text-[11px] text-neutral-400">
                                             <Mail size={12} className="text-neutral-600" />
@@ -976,12 +971,12 @@ function UsersTab() {
                                         <button 
                                             onClick={()=>setConfirmRoleUser(u)} 
                                             disabled={roleSaving===u._id || u._id === localStorage.getItem("userId")} 
-                                            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold active:scale-95 transition-all outline-none disabled:opacity-30 ${u.role==="admin"?"text-neutral-400 bg-neutral-400/5 border border-neutral-400/20":"text-purple-400 bg-purple-400/5 border border-purple-400/20"}`}
+                                            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold active:scale-95 transition-all outline-none disabled:opacity-30 ${u.role==="admin"?"text-neutral-400 bg-neutral-400/5 border border-neutral-400/20":"text-purple-400 bg-purple-400/5 border border-purple-400/20 hover:bg-purple-400/15"}`}
                                         >
                                             {roleSaving===u._id?<Loader2 size={12} className="animate-spin"/>:u.role==="admin"?"Demote":"Promote"}
                                         </button>
                                         {u.role !== "admin" && (
-                                            <button onClick={()=>setConfirmDeleteUser(u)} disabled={deleting===u._id} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold text-red-400 bg-red-400/5 border border-red-400/20 active:scale-95 transition-all outline-none disabled:opacity-30">
+                                            <button onClick={()=>setConfirmDeleteUser(u)} disabled={deleting===u._id} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold text-red-400 bg-red-400/5 border border-red-400/20 active:scale-95 transition-all outline-none disabled:opacity-40">
                                                 {deleting===u._id?<Loader2 size={12} className="animate-spin"/>:<Trash2 size={12}/>} Delete
                                             </button>
                                         )}

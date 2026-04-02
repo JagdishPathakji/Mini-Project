@@ -19,7 +19,7 @@ import {
     Trophy,
     Sparkles
 } from "lucide-react";
-import { API_BASE_URL } from "../config";
+import { API_BASE_URL, COMMON_HEADERS } from "../config";
 import Navbar from "./Navbar";
 
 export default function Profile() {
@@ -33,7 +33,7 @@ export default function Profile() {
                 const response = await fetch(`${API_BASE_URL}/user/getprofile`, {
                     credentials: "include",
                     method: "GET",
-                    headers: { "Content-Type": "application/json" }
+                    headers: COMMON_HEADERS
                 });
                 const data = await response.json();
                 

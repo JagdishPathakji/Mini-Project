@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { LogOut, User, Code2, Bot, Swords, BookOpen, Shield, Menu, X } from "lucide-react";
 import toast from "react-hot-toast";
-import { API_BASE_URL } from "../config";
+import { API_BASE_URL, COMMON_HEADERS } from "../config";
 
 export default function Navbar() {
     const navigate = useNavigate();
@@ -13,7 +13,7 @@ export default function Navbar() {
         try {
             const response = await fetch(`${API_BASE_URL}/auth/logout`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: COMMON_HEADERS,
                 credentials: "include"
             });
 
