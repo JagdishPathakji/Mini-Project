@@ -184,10 +184,10 @@ Rules:
 
     const callAI = async (context) => {
         try {
-            const res = await fetch(BACKEND_URL, {
+            const res = await fetch(`${BACKEND_URL}`, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ messages: context }),
+                headers: COMMON_HEADERS,
+                body: JSON.stringify({ transcript })
             });
             const data = await res.json();
             speak(data.message);

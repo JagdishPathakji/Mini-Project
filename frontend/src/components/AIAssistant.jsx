@@ -5,6 +5,11 @@ import { API_BASE_URL } from "../config";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+const COMMON_HEADERS = {
+    "Content-Type": "application/json",
+    "ngrok-skip-browser-warning": "true"
+};
+
 export default function AIAssistant({ question, code, language }) {
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
@@ -103,9 +108,7 @@ export default function AIAssistant({ question, code, language }) {
             // Calling backend proxy instead of direct Ollama
             const response = await fetch(`${API_BASE_URL}/user/ai/chat`, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: COMMON_HEADERS,
                 body: JSON.stringify({
                     messages: history.concat(userMessage),
                     systemPrompt: systemPrompt

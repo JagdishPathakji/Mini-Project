@@ -194,9 +194,9 @@ export default function ChallengeRoom() {
         setIsRunning(true); setShowRunResult(true); setIsConsoleOpen(true); setRunResults(null);
         try {
             const res = await fetch(`${API_BASE_URL}/question/runcode`, {
-                method: "POST", credentials: "include",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ qno: question.qno, code, language, testcases: sampleTestcases })
+                method: "POST",
+                headers: COMMON_HEADERS,
+                body: JSON.stringify({ code, language })
             });
             const data = await res.json();
             if (res.ok && data.status) setRunResults(data.results);

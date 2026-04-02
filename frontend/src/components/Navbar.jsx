@@ -109,8 +109,8 @@ export default function Navbar() {
                                 to={link.path}
                                 onClick={() => setIsMenuOpen(false)}
                                 className={`px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-3 border transition-all ${isActive(link.path)
-                                        ? "bg-white/10 border-white/20 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)]"
-                                        : "text-neutral-400 border-transparent hover:text-white hover:bg-white/[0.03]"
+                                    ? "bg-white/10 border-white/20 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)]"
+                                    : "text-neutral-400 border-transparent hover:text-white hover:bg-white/[0.03]"
                                     }`}
                             >
                                 <span className="p-1.5 rounded-lg bg-white/5">{link.icon}</span>

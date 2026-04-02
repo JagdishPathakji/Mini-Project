@@ -58,7 +58,9 @@ export default function DSAInterviewRoom() {
     useEffect(() => {
         async function fetchInterviewQuestions() {
             try {
-                const response = await fetch(`${API_BASE_URL}/question/fetchrandom?difficulty=${difficulty}`);
+                const response = await fetch(`${API_BASE_URL}/question/fetchrandom?difficulty=${difficulty}`, {
+                    headers: COMMON_HEADERS
+                });
                 const data = await response.json();
 
                 if (data.status) {
