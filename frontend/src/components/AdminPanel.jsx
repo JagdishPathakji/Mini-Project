@@ -643,7 +643,7 @@ function QuestionsTab() {
         if (!confirmDelete) return;
         setDeleting(confirmDelete.qno);
         try {
-            const res  = await fetch(`${API}/admin/deletequestion/${confirmDelete.qno}`, { method: "DELETE", headers: authHeaders, ...authOpts });
+            const res  = await fetch(`${API}/admin/deletequestion/${confirmDelete.qno}`, { method: "DELETE", headers: COMMON_HEADERS, ...authOpts });
             const data = await res.json();
             if (data.status) { toast.success(data.message); fetchQuestions(page); }
             else toast.error(data.message || "Delete failed.");
@@ -839,7 +839,7 @@ function UsersTab() {
     const fetchUsers = useCallback(async (p = 1) => {
         setLoading(true);
         try {
-            const res  = await fetch(`${API}/admin/viewusers?page=${p}&limit=15`, { headers: authHeaders, ...authOpts });
+            const res  = await fetch(`${API}/admin/viewusers?page=${p}&limit=15`, { headers: COMMON_HEADERS, ...authOpts });
             const data = await res.json();
             if (data.status) { setUsers(data.users); setTotalPages(data.pages || 1); setTotal(data.total || 0); }
             else toast.error("Failed to load users.");
@@ -853,7 +853,7 @@ function UsersTab() {
         if (!confirmDeleteUser) return;
         setDeleting(confirmDeleteUser._id);
         try {
-            const res  = await fetch(`${API}/admin/deleteuser/${confirmDeleteUser._id}`, { method: "DELETE", headers: authHeaders, ...authOpts });
+            const res  = await fetch(`${API}/admin/deleteuser/${confirmDeleteUser._id}`, { method: "DELETE", headers: COMMON_HEADERS, ...authOpts });
             const data = await res.json();
             if (data.status) { toast.success(data.message); setViewUser(null); setConfirmDeleteUser(null); fetchUsers(page); }
             else toast.error(data.message || "Delete failed.");
@@ -866,7 +866,7 @@ function UsersTab() {
         const newRole = confirmRoleUser.role === "admin" ? "user" : "admin";
         setRoleSaving(confirmRoleUser._id);
         try {
-            const res  = await fetch(`${API}/admin/updateuserrole/${confirmRoleUser._id}`, { method: "PATCH", headers: authHeaders, ...authOpts, body: JSON.stringify({ role: newRole }) });
+            const res  = await fetch(`${API}/admin/updateuserrole/${confirmRoleUser._id}`, { method: "PATCH", headers: COMMON_HEADERS, ...authOpts, body: JSON.stringify({ role: newRole }) });
             const data = await res.json();
             if (data.status) { toast.success(data.message); setConfirmRoleUser(null); setViewUser(null); fetchUsers(page); }
             else toast.error(data.message);
