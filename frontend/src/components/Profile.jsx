@@ -19,6 +19,7 @@ import {
     Trophy,
     Sparkles
 } from "lucide-react";
+import { API_BASE_URL } from "../config";
 import Navbar from "./Navbar";
 
 export default function Profile() {
@@ -29,7 +30,7 @@ export default function Profile() {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const response = await fetch("http://localhost:3000/user/getprofile", {
+                const response = await fetch(`${API_BASE_URL}/user/getprofile`, {
                     credentials: "include",
                     method: "GET",
                     headers: { "Content-Type": "application/json" }
@@ -273,7 +274,7 @@ export default function Profile() {
                                 onClick={async () => {
                                     try {
                                         const toastId = toast.loading("Locating random challenge...");
-                                        const randRes = await fetch("http://localhost:3000/question/fetchrandom?difficulty=Easy");
+                                        const randRes = await fetch(`${API_BASE_URL}/question/fetchrandom?difficulty=Easy`);
                                         const randData = await randRes.json();
                                         if(randData.status && randData.doc.length > 0) {
                                             toast.dismiss(toastId);
@@ -305,7 +306,7 @@ export default function Profile() {
                                 onClick={async () => {
                                     try {
                                         const toastId = toast.loading("Summoning a hard challenge...");
-                                        const randRes = await fetch("http://localhost:3000/question/fetchrandom?difficulty=Hard");
+                                        const randRes = await fetch(`${API_BASE_URL}/question/fetchrandom?difficulty=Hard`);
                                         const randData = await randRes.json();
                                         if(randData.status && randData.doc.length > 0) {
                                             toast.dismiss(toastId);

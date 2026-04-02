@@ -16,6 +16,7 @@ import {
     LayoutGrid,
     ChevronDown
 } from "lucide-react";
+import { API_BASE_URL } from "../config";
 import Navbar from "./Navbar";
 
 export default function DSAInterviewRoom() {
@@ -57,7 +58,7 @@ export default function DSAInterviewRoom() {
     useEffect(() => {
         async function fetchInterviewQuestions() {
             try {
-                const response = await fetch(`http://localhost:3000/question/fetchrandom?difficulty=${difficulty}`);
+                const response = await fetch(`${API_BASE_URL}/question/fetchrandom?difficulty=${difficulty}`);
                 const data = await response.json();
 
                 if (data.status) {
@@ -149,7 +150,7 @@ export default function DSAInterviewRoom() {
         setLiveTestcases([]);
         
         try {
-            const response = await fetch("http://localhost:3000/question/interviewsubmit", {
+            const response = await fetch(`${API_BASE_URL}/question/interviewsubmit`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

@@ -2,9 +2,10 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { Mic, Radio, AlertCircle, ShieldAlert, LogOut, CheckCircle2 } from "lucide-react";
+import { API_BASE_URL } from "../config";
 import Navbar from "./Navbar";
 
-const BACKEND_URL = "http://localhost:3000/user/ai/interview";
+const BACKEND_URL = `${API_BASE_URL}/user/ai/interview`;
 const MAX_VIOLATIONS = 3;
 
 export default function InterviewRoom() {

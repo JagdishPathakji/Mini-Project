@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { ArrowLeft, Loader2, Mail, Lock, ShieldCheck, ChevronRight } from "lucide-react";
+import { API_BASE_URL } from "../config";
 
 export default function Login() {
     
@@ -18,7 +19,7 @@ export default function Login() {
       setLoading(true);
 
       try {
-        const response = await fetch("http://localhost:3000/auth/userlogin", {
+        const response = await fetch(`${API_BASE_URL}/auth/userlogin`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json"

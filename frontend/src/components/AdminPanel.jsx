@@ -8,10 +8,11 @@ import {
     Sparkles, Pencil, Eye, Mail, UserCircle, Calendar, Upload,
     TrendingUp, Crown, UserCog, CheckCircle2, AlertCircle
 } from "lucide-react";
+import { API_BASE_URL } from "../config";
 import Navbar from "./Navbar";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const API = "http://localhost:3000";
+const API = API_BASE_URL;
 const authHeaders = { "Content-Type": "application/json" };
 const authOpts = { credentials: "include" };
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Send, Bot, Loader2, Sparkles, Trash2, User } from "lucide-react";
 import toast from "react-hot-toast";
+import { API_BASE_URL } from "../config";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -100,7 +101,7 @@ export default function AIAssistant({ question, code, language }) {
             const history = messages.slice(-10).map(m => ({ role: m.role, content: m.content })); // Last 10 context
 
             // Calling backend proxy instead of direct Ollama
-            const response = await fetch("http://localhost:3000/user/ai/chat", {
+            const response = await fetch(`${API_BASE_URL}/user/ai/chat`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

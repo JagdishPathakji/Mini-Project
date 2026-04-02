@@ -9,9 +9,10 @@ import {
     TerminalSquare, Timer, Swords, Flag, Handshake, AlertCircle,
     Trophy, Skull, Clock, ArrowLeft, Copy, User
 } from "lucide-react";
+import { API_BASE_URL } from "../config";
 import Navbar from "./Navbar";
 
-const SOCKET_URL = "http://localhost:3000";
+const SOCKET_URL = API_BASE_URL;
 
 export default function ChallengeRoom() {
     const location = useLocation();
@@ -192,7 +193,7 @@ export default function ChallengeRoom() {
         if (!code.trim()) { toast.error("Code cannot be empty"); return; }
         setIsRunning(true); setShowRunResult(true); setIsConsoleOpen(true); setRunResults(null);
         try {
-            const res = await fetch("http://localhost:3000/question/runcode", {
+            const res = await fetch(`${API_BASE_URL}/question/runcode`, {
                 method: "POST", credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ qno: question.qno, code, language, testcases: sampleTestcases })

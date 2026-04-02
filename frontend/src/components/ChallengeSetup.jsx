@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { io } from "socket.io-client";
 import { Swords, Copy, Check, Link2, LogIn, Zap, ChevronRight, Users, Target, Timer, Loader2 } from "lucide-react";
+import { API_BASE_URL } from "../config";
 import Navbar from "./Navbar";
 
-const SOCKET_URL = "http://localhost:3000";
+const SOCKET_URL = API_BASE_URL;
 
 export default function ChallengeSetup() {
     const navigate = useNavigate();
