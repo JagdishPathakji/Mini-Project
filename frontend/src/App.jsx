@@ -26,6 +26,16 @@ function RequireAuth({ children }) {
     return token ? children : <Navigate to="/" replace />;
 }
 
+function RequireAdmin({ children }) {
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+    
+    if (!token) return <Navigate to="/login" replace />;
+    if (role !== "admin") return <Navigate to="/dashboard" replace />;
+    
+    return children;
+}
+
 const router = createBrowserRouter([
     {
         path: "/",
@@ -129,12 +139,10 @@ const router = createBrowserRouter([
     },
     {
         path: "/admin-panel",
-        element: localStorage.getItem("role") === "admin" ? (
-            <RequireAuth>
+        element: (
+            <RequireAdmin>
                 <AdminPanel />
-            </RequireAuth>
-        ) : (
-            <Navigate to="/login" replace />
+            </RequireAdmin>
         ),
     },
     {
