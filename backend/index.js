@@ -19,13 +19,22 @@ const port = process.env.PORT || 4000
 app.use(cookieparser())
 app.use(express.json())
 
-const allowedOrigins = [];
+const allowedOrigins = [
+    "https://nexinterview-frontend.vercel.app"
+];
+
+if (process.env.FRONTEND_URL) {
+    allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
 if (process.env.ALLOW_LOCAL === "true") {
     allowedOrigins.push(
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:5174",
         "http://127.0.0.1:5174",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000"
     );
 }
 
