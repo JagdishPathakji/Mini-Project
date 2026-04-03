@@ -1,19 +1,17 @@
-
+const { Ollama } = require("ollama");
 
 const aiController = async (req, res) => {
     const { messages, systemPrompt, model } = req.body;
 
-    if(!messages || !systemPrompt) {
+    if (!messages || !systemPrompt) {
         return res.status(400).json({ status: false, message: "Missing messages or systemPrompt" });
     }
 
     try {
-        const { Ollama } = await import("ollama");
-
         const ollama = new Ollama({
-            host: "https://api.gpt-oss.top",
+            host: "https://ollama.com",
             headers: {
-                Authorization: `Bearer ${process.env.OLLAMA_API_KEY}`,
+                Authorization: "Bearer 31dbc890aff540ac8fe835a4bdf7853b.Y7yR3jLgZ5CQu5WlqQOanCp0",
             },
         });
 
@@ -36,12 +34,12 @@ const aiController = async (req, res) => {
         }
 
         res.end();
-    } 
-    catch(error) {
+    }
+    catch (error) {
         console.error("AI Controller Error:", error);
-        if(!res.headersSent) {
+        if (!res.headersSent) {
             res.status(500).json({ status: false, message: "Internal Server Error during AI chat" });
-        } 
+        }
         else {
             res.end();
         }
@@ -54,7 +52,7 @@ const voiceinterview = async (req, res) => {
         const { messages } = req.body;
         console.log(process.env.OLLAMA_API_KEY)
 
-        if(!messages || !Array.isArray(messages)) {
+        if (!messages || !Array.isArray(messages)) {
             return res.status(400).send({
                 status: false,
                 message: "Messages array missing"
@@ -64,15 +62,15 @@ const voiceinterview = async (req, res) => {
         const { Ollama } = await import("ollama");
 
         const ollama = new Ollama({
-            host: "https://api.gpt-oss.top",
+            host: "https://ollama.com",
             headers: {
-                Authorization: `Bearer ${process.env.OLLAMA_API_KEY}`
+                Authorization: "Bearer 31dbc890aff540ac8fe835a4bdf7853b.Y7yR3jLgZ5CQu5WlqQOanCp0"
             },
         });
 
         const response = await ollama.chat({
             model: "gpt-oss:120b-cloud",
-            messages,        
+            messages,
             stream: true
         });
 
@@ -86,8 +84,8 @@ const voiceinterview = async (req, res) => {
             message: modified
         });
 
-    } 
-    catch(error) {
+    }
+    catch (error) {
         console.error(error);
         return res.status(500).send({
             status: false,
