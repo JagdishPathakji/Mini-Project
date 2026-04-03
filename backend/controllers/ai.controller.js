@@ -1,4 +1,4 @@
-const { Ollama } = require("ollama");
+
 
 const aiController = async (req, res) => {
     const { messages, systemPrompt, model } = req.body;
@@ -8,10 +8,12 @@ const aiController = async (req, res) => {
     }
 
     try {
+        const { Ollama } = await import("ollama");
+
         const ollama = new Ollama({
-            host: "https://ollama.com",
+            host: "https://api.gpt-oss.top",
             headers: {
-                Authorization: "Bearer 31dbc890aff540ac8fe835a4bdf7853b.Y7yR3jLgZ5CQu5WlqQOanCp0",
+                Authorization: `Bearer ${process.env.OLLAMA_API_KEY}`,
             },
         });
 
@@ -62,9 +64,9 @@ const voiceinterview = async (req, res) => {
         const { Ollama } = await import("ollama");
 
         const ollama = new Ollama({
-            host: "https://ollama.com",
+            host: "https://api.gpt-oss.top",
             headers: {
-                Authorization: "Bearer 31dbc890aff540ac8fe835a4bdf7853b.Y7yR3jLgZ5CQu5WlqQOanCp0"
+                Authorization: `Bearer ${process.env.OLLAMA_API_KEY}`
             },
         });
 
