@@ -9,7 +9,7 @@ import {
     TerminalSquare, Timer, Swords, Flag, Handshake, AlertCircle,
     Trophy, Skull, Clock, ArrowLeft, Copy, User
 } from "lucide-react";
-import { API_BASE_URL } from "../config";
+import { API_BASE_URL, COMMON_HEADERS } from "../config";
 import Navbar from "./Navbar";
 
 const SOCKET_URL = API_BASE_URL;
@@ -52,8 +52,11 @@ export default function ChallengeRoom() {
 
     const languages = ["python", "javascript", "java", "cpp", "c"];
 
-    const myUsername = players?.find((_, i) => isCreator ? i === 0 : i === 1)?.username || "You";
-    const opponentUsername = players?.find((_, i) => isCreator ? i === 1 : i === 0)?.username || "Opponent";
+    const myUserId = localStorage.getItem("userId");
+    const myPlayer = players?.find(p => String(p.userId) === String(myUserId));
+    const myUsername = myPlayer?.username || "You";
+    const opponentPlayer = players?.find(p => String(p.userId) !== String(myUserId));
+    const opponentUsername = opponentPlayer?.username || "Opponent";
 
     // Redirect if no state
     useEffect(() => {
@@ -145,7 +148,8 @@ export default function ChallengeRoom() {
 
         s.on("match-over", (payload) => {
             setMatchOver(payload);
-            if (payload.reason === "solved" && payload.winner?.username === myUsername) {
+            const isWinner = payload.winner?.userId === myUserId || payload.winner?.username === myUsername;
+            if (payload.reason === "solved" && isWinner) {
                 const end = Date.now() + 3000;
                 const frame = () => {
                     confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0, y: 0.7 }, colors: ['#34d399','#60a5fa','#a78bfa','#facc15','#f472b6'] });
@@ -196,7 +200,7 @@ export default function ChallengeRoom() {
             const res = await fetch(`${API_BASE_URL}/question/runcode`, {
                 method: "POST",
                 headers: COMMON_HEADERS,
-                body: JSON.stringify({ code, language })
+                body: JSON.stringify({ code, language, testcases: sampleTestcases })
             });
             const data = await res.json();
             if (res.ok && data.status) setRunResults(data.results);
@@ -244,7 +248,7 @@ export default function ChallengeRoom() {
 
     // ─── MATCH OVER MODAL ────────────────────────────────────────────────
     if (matchOver) {
-        const isWinner = matchOver.winner?.username === myUsername;
+        const isWinner = matchOver.winner?.userId === myUserId || matchOver.winner?.username === myUsername;
         const isTie = matchOver.result === "tie" || matchOver.reason === "tie-agreed";
         const accent = isTie ? "amber" : isWinner ? "emerald" : "red";
         const title = isTie ? "It's a Tie!" : isWinner ? "You Won!" : "You Lost";

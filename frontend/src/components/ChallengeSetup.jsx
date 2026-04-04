@@ -58,6 +58,7 @@ export default function ChallengeSetup() {
     }
 
     const handleCreateRoom = () => {
+        setMode("create");
         setIsLoading(true);
         const socket = getSocket();
         setupMatchListeners(socket);
