@@ -21,6 +21,7 @@ export default function Dashboard() {
     const navigate = useNavigate();
     const [questions, setQuestions] = useState([]);
     const [windowNo, setWindowNo] = useState(1);
+    const [totalQuestions, setTotalQuestions] = useState(0);
     const [loading, setLoading] = useState(false);
 
     // Frontend filtering state
@@ -38,6 +39,7 @@ export default function Dashboard() {
             const data = await response.json();
             if (data.status) {
                 setQuestions(data.doc);
+                setTotalQuestions(data.total || 0);
             }
         } catch (error) {
             console.error(error);
@@ -211,7 +213,7 @@ export default function Dashboard() {
 
                         <button
                             onClick={() => setWindowNo(prev => prev + 1)}
-                            disabled={questions.length < 10}
+                            disabled={windowNo * 10 >= totalQuestions}
                             className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 text-neutral-300 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition-all duration-300 font-medium text-sm backdrop-blur-md"
                         >
                             Next <ChevronRight size={16} />

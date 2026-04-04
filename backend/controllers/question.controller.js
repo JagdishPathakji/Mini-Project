@@ -282,14 +282,17 @@ const fetchallquestion = async (req, res) => {
         // return res.status(401).send({ status: "login", message: "Unauthorized: Token not found, Please Login again" });
 
         const windowno = Number(req.query.windowno) || 1;
-
-        const start = 1 + (windowno - 1) * 10;
-        const end = start + 9;
+        const limit = 10;
+        const skip = (windowno - 1) * limit;
 
         const docs = await question.find(
-            { qno: { $gte: start, $lte: end } },
+            {},
             { _id: 1, qno: 1, qheading: 1, qdifficulty: 1, qtags: 1 }
-        ).sort({ qno: 1 }).lean();
+        )
+        .sort({ qno: 1 })
+        .skip(skip)
+        .limit(limit)
+        .lean();
 
         let userId = null;
         if (req.cookies && req.cookies.token) {
@@ -320,9 +323,12 @@ const fetchallquestion = async (req, res) => {
             }
         }
 
+        const total = await question.countDocuments({});
+
         return res.status(200).json({
             status: true,
-            doc: docs
+            doc: docs,
+            total
         })
 
     }
