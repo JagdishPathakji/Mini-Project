@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexInterview - Academic Presentation</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+    <div class="presentation-wrapper">
+        <!-- Navigation Sidebar -->
+        <nav class="side-nav">
+            <div class="nav-dots" id="navDots"></div>
+            <div class="progress-vertical">
+                <div id="progressFill" class="fill"></div>
+            </div>
+        </nav>
+
+        <div class="slides" id="slidesContainer">
+            <!-- Slide 1: Academic Title -->
+            <section class="slide active" id="slide-1">
+                <div class="slide-content title-layout academy">
+                    <div class="college-header">
+                        <div class="college-info">
+                            <h4 class="college-name">Birla Vishvakarma Mahavidhyalaya</h4>
+                            <p class="college-sub">Engineering College (An Autonomous Institution)</p>
+                            <p class="college-sub">Information Technology Department</p>
+                        </div>
+                    </div>
+
+                    <div class="title-main">
+                        <h1 class="hero-text mini">NexInterview</h1>
+                        <p class="project-tagline">Online Coding Platform with AI integration</p>
+                        <div class="line-divider"></div>
+
+                        <div class="presenter-grid">
+                            <div class="presenter-box">
+                                <span class="label">Prepared and Presented By</span>
+                                <ul class="student-list">
+                                    <li><strong>Jagdish Pathakji</strong> <span class="id">(23IT426)</span></li>
+                                    <li><strong>Yug Dholakiya</strong> <span class="id">(23IT420)</span></li>
+                                    <li><strong>Rudra Gohil</strong> <span class="id">(23IT413)</span></li>
+                                </ul>
+                            </div>
+                            <div class="presenter-box">
+                                <span class="label">Guided By</span>
+                                <p class="faculty-name"><strong>Nilesh B Prajapati</strong></p>
+                                <p class="faculty-sub">Information Technology Department</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Slide 2: Index / Roadmap -->
+            <section class="slide" id="slide-2">
+                <div class="slide-content standard-layout">
+                    <div class="header">
+                        <h2><i data-lucide="align-right"></i> Roadmap</h2>
+                    </div>
+                    <div class="index-grid">
+                        <div class="index-item"><span>01</span> Secure Authentication using JWT</div>
+                        <div class="index-item"><span>02</span> Problem Solving Engine</div>
+                        <div class="index-item"><span>03</span> AI Technical Interview</div>
+                        <div class="index-item"><span>04</span> 1v1 Coding Battle</div>
+                        <div class="index-item"><span>05</span> User Analytical Metrics</div>
+                        <div class="index-item"><span>06</span> Admin Panel</div>
+                        <div class="index-item"><span>07</span> Conclusion & Insights</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Slide 3: Secure Access (Auth) -->
+            <section class="slide" id="slide-3">
+                <div class="slide-content split-layout">
+                    <div class="left-col">
+                        <div class="module-count">Phase 01</div>
+                        <h3><i data-lucide="shield-check"></i> Secure Authentication using JWT</h3>
+                        <p class="module-desc">A robust entry point utilizing modern security standards to protect
+                            unauthorized access.</p>
+                        <ul class="mod-bullets">
+                            <li><strong>Integrated Brevo API:</strong> Automated OTP verification for secure sign up.
+                            </li>
+                            <li><strong>JWT Orchestration:</strong> Maintaining high-security session states across
+                                routes.</li>
+                            <li><strong>Dynamic Redirection:</strong> Role-based access control (Admin vs. Developer).
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="right-col">
+                        <div class="device-mock">
+                            <div class="browser-bar">
+                                <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+                                <div class="url-bar">nexinterview.com/auth</div>
+                            </div>
+                            <div class="screenshot-placeholder">
+                                <i data-lucide="camera-off" class="ph-icon"></i>
+                                <span>Auth Module Screenshot</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Slide 4: Solve Engine (DSA) -->
+            <section class="slide" id="slide-4">
+                <div class="slide-content split-layout">
+                    <div class="left-col">
+                        <div class="module-count">Phase 02</div>
+                        <h3><i data-lucide="binary"></i> Problem Solving Engine</h3>
+                        <p class="module-desc">Precision-engineered environment designed for the modern problem solver.
+                        </p>
+                        <ul class="mod-bullets">
+                            <li><strong>Integrated Monaco:</strong> Code-style syntax and semantic support.</li>
+                            <li><strong>Deep AI Telemetry:</strong> Real-time logic hints powered by LLM context.</li>
+                            <li><strong>Runtime Matrix:</strong> Testcase wise visuals on submitting solution.</li>
+                            <li><strong>Multi-Lingo Support:</strong> Python, Java, C++, and JS handled.</li>
+                        </ul>
+                    </div>
+                    <div class="right-col">
+                        <div class="device-mock">
+                            <div class="browser-bar">
+                                <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+                                <div class="url-bar">nexinterview.com/solve</div>
+                            </div>
+                            <div class="screenshot-placeholder">
+                                <i data-lucide="camera-off" class="ph-icon"></i>
+                                <span>Solve Workspace Screenshot</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Slide 5: AI Interview -->
+            <section class="slide" id="slide-5">
+                <div class="slide-content split-layout">
+                    <div class="left-col">
+                        <div class="module-count">Phase 03</div>
+                        <h3><i data-lucide="mic-vocal"></i> AI Technical Interview</h3>
+                        <p class="module-desc">Voice-powered simulations that bridge the gap between practice and
+                            real-world tech interviews.</p>
+                        <ul class="mod-bullets">
+                            <li><strong>Voice-to-Logic:</strong> Speech synthesis integration for conversational flow.
+                            </li>
+                            <li><strong>Anti-Plagiarism Lock:</strong> Fullscreen proctoring with 3-strike violation.
+                            </li>
+                            <li><strong>Contextual AI:</strong> Local LLM (Ollama) tailored for technical precision.
+                            </li>
+                            <li><strong>Role based Interview:</strong> AI can take interview based on role.</li>
+                        </ul>
+                    </div>
+                    <div class="right-col">
+                        <div class="device-mock">
+                            <div class="browser-bar">
+                                <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+                                <div class="url-bar">nexinterview.com/interview</div>
+                            </div>
+                            <div class="screenshot-placeholder">
+                                <i data-lucide="camera-off" class="ph-icon"></i>
+                                <span>AI Interview Room Screenshot</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Slide 6: 1v1 PvP Arena -->
+            <section class="slide" id="slide-6">
+                <div class="slide-content split-layout">
+                    <div class="left-col">
+                        <div class="module-count">Phase 04</div>
+                        <h3><i data-lucide="flame"></i> 1v1 Coding Battle</h3>
+                        <p class="module-desc">1 vs 1 arena for real-time coding competitions.</p>
+                        <ul class="mod-bullets">
+                            <li><strong>Socket Dynamic Sync:</strong> Continuous opponent progress tracking.</li>
+                            <li><strong>Battle Mechanics:</strong> High-stakes 1v1 logic with win/loss telemetry.</li>
+                            <li><strong>Match Over Analysis:</strong> Code visuals after completion.</li>
+                            <li><strong>Real-time Code Push:</strong> First & Fast solver wins Mechanism.</li>
+                        </ul>
+                    </div>
+                    <div class="right-col">
+                        <div class="device-mock">
+                            <div class="browser-bar">
+                                <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+                                <div class="url-bar">nexinterview.com/challenge</div>
+                            </div>
+                            <div class="screenshot-placeholder">
+                                <i data-lucide="camera-off" class="ph-icon"></i>
+                                <span>1v1 Arena Screenshot</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Slide 7: Analytical Hub -->
+            <section class="slide" id="slide-7">
+                <div class="slide-content split-layout">
+                    <div class="left-col">
+                        <div class="module-count">Phase 05</div>
+                        <h3><i data-lucide="pie-chart"></i> User Analytical Metrics</h3>
+                        <p class="module-desc">Deep-dive metrics to track coder's progress.</p>
+                        <ul class="mod-bullets">
+                            <li><strong>Problem Matrix:</strong> Solved / Submissions / Accuracy details</li>
+                            <li><strong>Submission Ledger:</strong> Historial records of all solves.</li>
+                            <li><strong>Extra activites:</strong> Solve Random / Hard Mode / Problem Vault as extra
+                                activites are given.</li>
+                        </ul>
+                    </div>
+                    <div class="right-col">
+                        <div class="device-mock">
+                            <div class="browser-bar">
+                                <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+                                <div class="url-bar">nexinterview.com/profile</div>
+                            </div>
+                            <div class="screenshot-placeholder">
+                                <i data-lucide="camera-off" class="ph-icon"></i>
+                                <span>Profile View Screenshot</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Slide 7: Admin Panel -->
+            <section class="slide" id="slide-8">
+                <div class="slide-content split-layout">
+                    <div class="left-col">
+                        <div class="module-count">Phase 05</div>
+                        <h3><i data-lucide="cpu"></i> Admin Panel</h3>
+                        <p class="module-desc">Admin Panel for complete platform oversight.</p>
+                        <ul class="mod-bullets">
+                            <li><strong>CMS Problem Engine:</strong> Dynamic Question CRUD with testcase control.</li>
+                            <li><strong>User Governance:</strong> Role elevation (Promote/Delete) tools.</li>
+                            <li><strong>Bulk Ingestion:</strong> JSON-based automated content scaling.</li>
+                            <li><strong>Listings:</strong> Proper listing of all users and problems on website.</li>
+                        </ul>
+                    </div>
+                    <div class="right-col">
+                        <div class="device-mock">
+                            <div class="browser-bar">
+                                <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+                                <div class="url-bar">nexinterview.com/admin</div>
+                            </div>
+                            <div class="screenshot-placeholder">
+                                <i data-lucide="camera-off" class="ph-icon"></i>
+                                <span>Admin Dashboard Screenshot</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- Slide 9: Tech Stack -->
+            <section class="slide" id="slide-9">
+                <div class="slide-content standard-layout">
+                    <div class="header">
+                        <h2><i data-lucide="terminal"></i> Technical Core</h2>
+                    </div>
+                    <div class="tech-grid">
+                        <div class="tech-card">
+                            <h5>Client Layer</h5>
+                            <p>React 19, Tailwind, Monaco, Lucide, Framer Motion</p>
+                        </div>
+                        <div class="tech-card">
+                            <h5>Server Matrix</h5>
+                            <p>Node.js, Express, Redis, Socket.io, BREVO API</p>
+                        </div>
+                        <div class="tech-card">
+                            <h5>Intelligence</h5>
+                            <p>LLM (Ollama), Contextual Prompting, Speech Synthesis</p>
+                        </div>
+                        <div class="tech-card">
+                            <h5>Deployement</h5>
+                            <p>Self Hosted for prototyping</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Slide 10: Conclusion -->
+            <section class="slide" id="slide-10">
+                <div class="slide-content standard-layout">
+                    <div class="header">
+                        <h2><i data-lucide="book-open-check"></i> Conclusion</h2>
+                    </div>
+                    <div class="conclusion-box">
+                        <p class="final-desc">NexInterview represents a unified ecosystem for the next generation of
+                            engineers, bridging the technical gap through AI and competition.</p>
+                        <div class="impact-grid">
+                            <div class="impact-item">
+                                <i data-lucide="trending-up"></i>
+                                <span>Elevated Preparation Efficiency</span>
+                            </div>
+                            <div class="impact-item">
+                                <i data-lucide="user-check"></i>
+                                <span>Critical Problem Solving</span>
+                            </div>
+                            <div class="impact-item">
+                                <i data-lucide="layers"></i>
+                                <span>AI Assistance</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Slide 11: Final Thank You -->
+            <section class="slide" id="slide-11">
+                <div class="slide-content title-layout">
+                    <div class="title-main">
+                        <h1 class="hero-text mini">Thank You</h1>
+                        <p class="tagline">Grateful for your attention & valuable guidance.</p>
+                        <div class="line-divider"></div>
+                        <div class="college-footer">
+                            <strong>Birla Vishvakarma Mahavidhyalaya</strong>
+                            <p>BVM Engineering College</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Controls overlay -->
+        <div class="controls-overlay">
+            <div class="slide-num" id="slideNum">01 / 11</div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,507 @@
+:root {
+    --bg-deep: #0a0f1e;
+    --bg-slate: #111827;
+    --acc-cyan: #22d3ee;
+    --acc-blue: #3b82f6;
+    --acc-violet: #8b5cf6;
+    --text-pure: #ffffff;
+    --text-off: #cbd5e1;
+    --text-muted: #64748b;
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-deep);
+    color: var(--text-pure);
+    font-family: 'Inter', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.presentation-wrapper {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background: radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 100% 100%, rgba(34, 211, 238, 0.1) 0%, transparent 50%);
+}
+
+/* Side Navigation */
+.side-nav {
+    position: absolute;
+    left: 50px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+    z-index: 100;
+}
+
+.nav-dots {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.nav-dot {
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-dot.active {
+    background: var(--acc-cyan);
+    border-color: var(--acc-cyan);
+    box-shadow: 0 0 20px var(--acc-cyan);
+    transform: scale(1.4);
+}
+
+.progress-vertical {
+    width: 2px;
+    height: 120px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-vertical .fill {
+    width: 100%;
+    height: 0%;
+    background: linear-gradient(to bottom, var(--acc-blue), var(--acc-cyan));
+    transition: height 0.6s ease;
+}
+
+/* Slides */
+.slides {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.slide {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 0 120px;
+    transform: translateX(40px);
+}
+
+.slide.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+.slide-content {
+    width: 100%;
+    max-width: 1300px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.slide.active .slide-content {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* College Branding Header */
+.college-header {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 60px;
+}
+
+.logo-space {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, var(--acc-blue), var(--acc-cyan));
+    border-radius: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 10px 30px rgba(59, 130, 246, 0.2);
+}
+
+.logo-txt {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.college-name {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+
+.college-sub {
+    font-size: 1rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* Title Slide Logic */
+.hero-text {
+    font-family: 'Outfit', sans-serif;
+    font-size: 8rem;
+    font-weight: 900;
+    background: linear-gradient(to bottom, #fff, #94a3b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -6px;
+    margin-bottom: 10px;
+}
+
+.hero-text.mini {
+    font-size: 6rem;
+    letter-spacing: -4px;
+}
+
+.project-tagline {
+    font-size: 1.4rem;
+    color: var(--acc-cyan);
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0.8;
+}
+
+.line-divider {
+    width: 100px;
+    height: 4px;
+    background: var(--acc-blue);
+    border-radius: 2px;
+    margin: 40px 0;
+}
+
+.presenter-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 60px;
+    margin-top: 60px;
+    text-align: left;
+}
+
+.presenter-box {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    padding: 30px;
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.presenter-box .label {
+    display: block;
+    color: var(--text-muted);
+    font-weight: 800;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+}
+
+.student-list {
+    list-style: none;
+}
+
+.student-list li {
+    margin-bottom: 12px;
+    font-size: 1.1rem;
+}
+
+.student-list .id {
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-left: 8px;
+}
+
+.faculty-name {
+    font-size: 1.4rem;
+    margin-bottom: 5px;
+}
+
+.faculty-sub {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+/* Index Slide */
+.header h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 3.5rem;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 50px;
+}
+
+.header h2 i {
+    color: var(--acc-cyan);
+    opacity: 0.6;
+}
+
+.index-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.index-item {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    padding: 25px 35px;
+    border-radius: 20px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: all 0.4s ease;
+}
+
+.index-item span {
+    color: var(--acc-cyan);
+    font-size: 1rem;
+    opacity: 0.4;
+    font-family: 'JetBrains Mono';
+}
+
+.index-item:hover {
+    border-color: var(--acc-cyan);
+    background: rgba(34, 211, 238, 0.05);
+    transform: translateX(10px);
+}
+
+/* Split Layout Modules */
+.split-layout {
+    display: flex;
+    gap: 80px;
+    align-items: center;
+}
+
+.left-col { flex: 1; }
+.right-col { flex: 1.2; }
+
+.module-count {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--acc-blue);
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 15px;
+}
+
+h3 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 4rem;
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 25px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+h3 i { color: var(--acc-cyan); width: 48px; height: 48px; }
+
+.module-desc {
+    font-size: 1.2rem;
+    color: var(--text-off);
+    opacity: 0.8;
+    line-height: 1.6;
+    margin-bottom: 40px;
+}
+
+.mod-bullets { list-style: none; }
+.mod-bullets li {
+    margin-bottom: 15px;
+    font-size: 1.15rem;
+    color: var(--text-off);
+    padding-left: 30px;
+    position: relative;
+}
+
+.mod-bullets li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 12px;
+    width: 6px;
+    height: 6px;
+    background: var(--acc-cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--acc-cyan);
+}
+
+.mod-bullets li strong { color: white; }
+
+/* Mockup */
+.device-mock {
+    background: #000;
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 50px 100px rgba(0, 0, 0, 0.5);
+}
+
+.browser-bar {
+    height: 35px;
+    background: #111;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    gap: 8px;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.browser-bar .url-bar {
+    margin-left: 20px;
+    background: #080808;
+    height: 18px;
+    border-radius: 4px;
+    flex: 1;
+    font-size: 9px;
+    color: #444;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    font-family: 'JetBrains Mono';
+}
+
+.screenshot-placeholder {
+    aspect-ratio: 16 / 10;
+    background: #050505;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    color: #222;
+}
+
+.screenshot-placeholder i { width: 40px; height: 40px; }
+.screenshot-placeholder span { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; }
+
+/* Tech Grid */
+.tech-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 30px;
+}
+
+.tech-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    padding: 50px 40px;
+    border-radius: 24px;
+    text-align: center;
+    transition: transform 0.4s ease;
+}
+
+.tech-card h5 {
+    color: var(--acc-cyan);
+    font-size: 1.6rem;
+    margin-bottom: 15px;
+    font-family: 'Outfit';
+}
+
+.tech-card p {
+    color: var(--text-off);
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+/* Conclusion */
+.conclusion-box {
+    background: linear-gradient(135deg, rgba(59,130,246,0.05), rgba(34,211,238,0.05));
+    border: 1px solid var(--glass-border);
+    padding: 60px;
+    border-radius: 30px;
+}
+
+.final-desc {
+    font-size: 1.8rem;
+    line-height: 1.5;
+    font-weight: 500;
+    margin-bottom: 60px;
+    color: var(--text-pure);
+}
+
+.impact-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 40px;
+}
+
+.impact-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    text-align: center;
+}
+
+.impact-item i { color: var(--acc-cyan); width: 32px; height: 32px; }
+.impact-item span { font-weight: 700; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+
+/* Thank You */
+.thanks {
+    font-size: 2rem;
+    color: var(--acc-cyan);
+    margin-top: 20px;
+}
+
+.college-footer {
+    margin-top: 60px;
+    text-align: center;
+}
+
+.college-footer strong { font-family: 'Outfit'; font-size: 1.2rem; }
+.college-footer p { color: var(--text-muted); font-size: 0.9rem; margin-top: 5px; }
+
+/* Controls Overlay */
+.controls-overlay {
+    position: absolute;
+    bottom: 50px;
+    right: 80px;
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    z-index: 1000;
+}
+
+.slide-num {
+    font-family: 'JetBrains Mono';
+    font-size: 1.2rem;
+    color: var(--text-muted);
+}
+
+/* Dots and transitions */
+.dot.r { background: #ff5f56; }
+.dot.y { background: #ffbd2e; }
+.dot.g { background: #27c93f; }

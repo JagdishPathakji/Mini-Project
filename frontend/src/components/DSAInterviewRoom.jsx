@@ -16,7 +16,7 @@ import {
     LayoutGrid,
     ChevronDown
 } from "lucide-react";
-import { API_BASE_URL } from "../config";
+import { API_BASE_URL, COMMON_HEADERS } from "../config";
 import Navbar from "./Navbar";
 
 export default function DSAInterviewRoom() {
@@ -33,7 +33,7 @@ export default function DSAInterviewRoom() {
             const savedLang = sessionStorage.getItem(`interview_lang_${difficulty}`) || "python";
             const saved = sessionStorage.getItem(`interview_codes_${difficulty}_${savedLang}`);
             return saved ? JSON.parse(saved) : ["", "", ""];
-        } catch { return ["", "" ,""]; }
+        } catch { return ["", "", ""]; }
     });
     const [language, setLanguage] = useState(() => {
         return sessionStorage.getItem(`interview_lang_${difficulty}`) || "python";
@@ -150,7 +150,7 @@ export default function DSAInterviewRoom() {
         setProgressPercent(0);
         setSubmitStage("Connecting to Matrix...");
         setLiveTestcases([]);
-        
+
         try {
             const response = await fetch(`${API_BASE_URL}/question/interviewsubmit`, {
                 method: "POST",
@@ -192,18 +192,18 @@ export default function DSAInterviewRoom() {
                                     return [...prev, { id: data.testcase, status: 'running' }];
                                 });
                             } else if (data.stage === "passed") {
-                                setLiveTestcases(prev => prev.map(t => 
+                                setLiveTestcases(prev => prev.map(t =>
                                     t.id === data.testcase ? { ...t, status: 'passed', time: data.time } : t
                                 ));
                             } else if (data.stage === "completed") {
                                 setProgressPercent(100);
                                 setSubmitStage("Finalizing Telemetry...");
-                                
+
                                 setTimeout(() => {
                                     setSubmissionResult(data);
                                     if (data.status) {
                                         toast.success(data.message || "All testcases passed!");
-                                        setSolvedQuestions(prev => ({...prev, [currentIndex]: true}));
+                                        setSolvedQuestions(prev => ({ ...prev, [currentIndex]: true }));
                                     } else {
                                         toast.error(data.message || "Submission failed");
                                     }
@@ -267,7 +267,7 @@ export default function DSAInterviewRoom() {
             <div className="flex flex-col lg:flex-row flex-1 pt-20 pb-6 px-6 gap-2 overflow-hidden relative z-10">
 
                 {/* LEFT PANEL */}
-                <div style={ { '--left-width': `${leftWidth}%` } } className="lg:w-[var(--left-width)] w-full bg-[#0a0a0a] border border-white/10 rounded-3xl flex flex-col h-full overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.4)] relative">
+                <div style={{ '--left-width': `${leftWidth}%` }} className="lg:w-[var(--left-width)] w-full bg-[#0a0a0a] border border-white/10 rounded-3xl flex flex-col h-full overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.4)] relative">
                     <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none z-0" />
 
                     {/* Tabs / Header */}
@@ -375,7 +375,7 @@ export default function DSAInterviewRoom() {
                                             }}
                                             className={`w-16 h-16 rounded-2xl border-2 flex items-center justify-center font-bold text-xl transition-all duration-300 relative overflow-hidden group ${currentIndex === idx
                                                 ? "border-white bg-white/10 text-white scale-110 shadow-[0_0_30px_-5px_rgba(255,255,255,0.4)]"
-                                                : solvedQuestions[idx] 
+                                                : solvedQuestions[idx]
                                                     ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400 hover:border-emerald-500/50 hover:bg-emerald-500/10"
                                                     : "border-white/10 bg-white/[0.02] text-neutral-500 hover:border-white/30 hover:text-white hover:bg-white/5"
                                                 }`}
@@ -436,8 +436,8 @@ export default function DSAInterviewRoom() {
                                                     <span className="text-blue-400">{Math.round(progressPercent)}%</span>
                                                 </div>
                                                 <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                                                    <div 
-                                                        className="h-full bg-blue-500 rounded-full transition-all duration-300 relative shadow-[0_0_15px_rgba(59,130,246,0.6)]" 
+                                                    <div
+                                                        className="h-full bg-blue-500 rounded-full transition-all duration-300 relative shadow-[0_0_15px_rgba(59,130,246,0.6)]"
                                                         style={{ width: `${progressPercent}%` }}
                                                     >
                                                         <div className="absolute top-0 right-0 bottom-0 w-10 bg-gradient-to-r from-transparent via-white/50 to-transparent animate-[shimmer_1.5s_infinite]" />
@@ -481,7 +481,7 @@ export default function DSAInterviewRoom() {
                                 ) : submissionResult.status === true ? (
                                     <div className="p-8 bg-[#0a0a0a] border border-emerald-500/20 rounded-3xl shadow-[0_0_50px_-10px_rgba(52,211,153,0.15)] mb-4 relative overflow-hidden group">
                                         <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent pointer-events-none" />
-                                        
+
                                         <div className="flex items-center gap-4 mb-8 relative z-10">
                                             <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-[0_0_20px_rgba(52,211,153,0.2)]">
                                                 <CheckCircle2 size={28} className="text-emerald-400" />
@@ -534,7 +534,7 @@ export default function DSAInterviewRoom() {
                                                         <div className="text-[10px] text-red-400/80 mb-1 uppercase tracking-widest font-bold">Your Output</div>
                                                         <pre className="p-4 bg-[#030303] border border-red-500/20 rounded-xl text-sm overflow-x-auto text-neutral-300 font-mono shadow-inner">
                                                             {(() => {
-                                                                try { return typeof window !== 'undefined' ? atob(submissionResult.details.stdout) : submissionResult.details.stdout; } 
+                                                                try { return typeof window !== 'undefined' ? atob(submissionResult.details.stdout) : submissionResult.details.stdout; }
                                                                 catch (e) { return submissionResult.details.stdout; }
                                                             })()}
                                                         </pre>
@@ -547,7 +547,7 @@ export default function DSAInterviewRoom() {
                                                 <div className="text-[10px] text-red-400/80 mb-1 uppercase tracking-widest font-bold">Compiler Output</div>
                                                 <pre className="p-4 bg-[#030303] border border-red-500/30 rounded-xl text-sm overflow-x-auto text-red-400 font-mono shadow-inner whitespace-pre-wrap">
                                                     {(() => {
-                                                        try { return typeof window !== 'undefined' ? atob(submissionResult.details.compile_output) : submissionResult.details.compile_output; } 
+                                                        try { return typeof window !== 'undefined' ? atob(submissionResult.details.compile_output) : submissionResult.details.compile_output; }
                                                         catch (e) { return submissionResult.details.compile_output; }
                                                     })()}
                                                 </pre>
@@ -561,13 +561,13 @@ export default function DSAInterviewRoom() {
                 </div>
 
                 {/* Horizontal Drag Handle */}
-                <div 
+                <div
                     className="hidden lg:block w-2 bg-transparent hover:bg-white/10 cursor-col-resize transition-colors rounded-full z-50 shrink-0"
                     onMouseDown={startHorizontalDrag}
                 />
 
                 {/* RIGHT PANEL */}
-                <div style={ { '--right-width': `${100 - leftWidth}%` } } className="lg:w-[var(--right-width)] w-full flex flex-col bg-[#0a0a0a] border border-white/10 rounded-3xl h-full overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.4)] relative">
+                <div style={{ '--right-width': `${100 - leftWidth}%` }} className="lg:w-[var(--right-width)] w-full flex flex-col bg-[#0a0a0a] border border-white/10 rounded-3xl h-full overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.4)] relative">
                     <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none z-0" />
 
                     {/* Editor Header */}
@@ -619,7 +619,7 @@ export default function DSAInterviewRoom() {
 
                         {/* Submit Button */}
                         <div className="flex items-center gap-3">
-                            <button 
+                            <button
                                 onClick={handleSubmit}
                                 disabled={isSubmitting}
                                 className={`px-6 py-2 bg-white text-black rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all flex items-center gap-2 shadow-[0_0_20px_-5px_rgba(255,255,255,0.4)] ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-[0_0_30px_-5px_rgba(255,255,255,0.6)] hover:-translate-y-0.5'}`}
