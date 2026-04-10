@@ -2,12 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { API_BASE_URL, COMMON_HEADERS } from "../config";
-
 const BACKEND_URL = `${API_BASE_URL}/user/ai/interview`;
-
-import { useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
-import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import Navbar from "./Navbar";
 
 
