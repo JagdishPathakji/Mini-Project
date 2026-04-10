@@ -103,7 +103,8 @@ const transcribe = async (req, res) => {
 
         const transcription = await groq.audio.transcriptions.create({
             file: fs.createReadStream(req.file.path),
-            model: "whisper-large-v3",
+            model: "whisper-large-v3-turbo",
+            prompt: "This is a technical interview answer. The speaker is answering questions about programming, software engineering, data structures, algorithms, React, Node.js, Python, JavaScript, SQL, databases, system design, and other technical topics.",
             response_format: "json",
             language: "en",
             temperature: 0.0,

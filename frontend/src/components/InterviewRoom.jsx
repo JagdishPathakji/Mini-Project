@@ -188,7 +188,15 @@ export default function InterviewRoom() {
         try {
             synthRef.current.cancel(); // stop any TTS
 
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    channelCount: 1,
+                    sampleRate: 16000,
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true,
+                },
+            });
             streamRef.current = stream;
             audioChunksRef.current = [];
 
@@ -208,7 +216,8 @@ export default function InterviewRoom() {
             };
 
             mediaRecorderRef.current = mediaRecorder;
-            mediaRecorder.start(250); // collect data every 250ms
+            // NO timeslice — records as one continuous blob for better quality
+            mediaRecorder.start();
             setPhase(STATES.RECORDING);
         } catch (err) {
             console.error("Mic access error:", err);
@@ -220,6 +229,8 @@ export default function InterviewRoom() {
     // ── Stop Recording ──────────────────────────────────────────────
     const stopRecording = useCallback(() => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+            // Request any remaining data before stopping
+            mediaRecorderRef.current.requestData();
             mediaRecorderRef.current.stop();
         }
     }, []);
