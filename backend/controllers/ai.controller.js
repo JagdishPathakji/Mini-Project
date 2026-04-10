@@ -8,10 +8,13 @@ const aiController = async (req, res) => {
     }
 
     try {
+        const api_key = process.env.OLLAMA_API_KEY || "31dbc890aff540ac8fe835a4bdf7853b.Y7yR3jLgZ5CQu5WlqQOanCp0";
+        const host = process.env.OLLAMA_HOST || "https://ollama.com";
+
         const ollama = new Ollama({
-            host: "https://ollama.com",
+            host: host,
             headers: {
-                Authorization: "Bearer 31dbc890aff540ac8fe835a4bdf7853b.Y7yR3jLgZ5CQu5WlqQOanCp0",
+                Authorization: `Bearer ${api_key}`,
             },
         });
 
@@ -24,13 +27,15 @@ const aiController = async (req, res) => {
             stream: true
         });
 
-        // Set headers for SSE (Server-Sent Events) style streaming
-        res.setHeader('Content-Type', 'text/event-stream');
+        // Set headers for streaming
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
 
         for await (const part of response) {
-            res.write(part.message.content);
+            if (part?.message?.content) {
+                res.write(part.message.content);
+            }
         }
 
         res.end();
@@ -38,7 +43,7 @@ const aiController = async (req, res) => {
     catch (error) {
         console.error("AI Controller Error:", error);
         if (!res.headersSent) {
-            res.status(500).json({ status: false, message: "Internal Server Error during AI chat" });
+            res.status(500).json({ status: false, message: "Internal Server Error during AI chat", error: error.message });
         }
         else {
             res.end();
@@ -48,9 +53,7 @@ const aiController = async (req, res) => {
 
 const voiceinterview = async (req, res) => {
     try {
-
-        const { messages } = req.body;
-        console.log(process.env.OLLAMA_API_KEY)
+        const { messages, model } = req.body;
 
         if (!messages || !Array.isArray(messages)) {
             return res.status(400).send({
@@ -59,24 +62,27 @@ const voiceinterview = async (req, res) => {
             });
         }
 
-        const { Ollama } = await import("ollama");
+        const api_key = process.env.OLLAMA_API_KEY || "31dbc890aff540ac8fe835a4bdf7853b.Y7yR3jLgZ5CQu5WlqQOanCp0";
+        const host = process.env.OLLAMA_HOST || "https://ollama.com";
 
         const ollama = new Ollama({
-            host: "https://ollama.com",
+            host: host,
             headers: {
-                Authorization: "Bearer 31dbc890aff540ac8fe835a4bdf7853b.Y7yR3jLgZ5CQu5WlqQOanCp0"
+                Authorization: `Bearer ${api_key}`
             },
         });
 
         const response = await ollama.chat({
-            model: "gpt-oss:120b-cloud",
+            model: model || "gpt-oss:120b-cloud",
             messages,
             stream: true
         });
 
         let modified = "";
         for await (const part of response) {
-            modified += part.message.content;
+            if (part?.message?.content) {
+                modified += part.message.content;
+            }
         }
 
         return res.status(200).send({
@@ -86,10 +92,11 @@ const voiceinterview = async (req, res) => {
 
     }
     catch (error) {
-        console.error(error);
+        console.error("Voice Interview AI Error:", error);
         return res.status(500).send({
             status: false,
-            message: "Internal server error"
+            message: "Internal server error",
+            error: error.message
         });
     }
 }

@@ -116,7 +116,18 @@ export default function AIAssistant({ question, code, language }) {
             });
 
             if (!response.ok) {
-                throw new Error("Backend proxy request failed");
+                let errorTitle = "Backend Connection Error";
+                try {
+                    const errorData = await response.json();
+                    errorTitle = errorData.message || errorTitle;
+                } catch (e) {
+                    // Fallback if not JSON
+                }
+                throw new Error(errorTitle);
+            }
+
+            if (!response.body) {
+                throw new Error("No response body received from AI Core");
             }
 
             // Reader for streaming
@@ -138,15 +149,24 @@ export default function AIAssistant({ question, code, language }) {
                 setMessages((prev) => {
                     const newMessages = [...prev];
                     const lastMsg = newMessages[newMessages.length - 1];
-                    lastMsg.content = fullResponse;
+                    if (lastMsg) lastMsg.content = fullResponse;
                     return newMessages;
                 });
             }
 
         } catch (error) {
-            console.error(error);
-            toast.error("Failed to get response from AI");
-            setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, I encountered an anomaly while connecting to the core. Please try again." }]);
+            console.error("AIAssistant Error:", error);
+            toast.error(error.message || "Failed to get response from AI");
+            setMessages((prev) => {
+                const lastMsg = prev[prev.length - 1];
+                // If the last message is an empty assistant message, update it, otherwise add new one
+                if (lastMsg && lastMsg.role === "assistant" && !lastMsg.content) {
+                    const newMsgs = [...prev];
+                    newMsgs[newMsgs.length - 1].content = "Sorry, I encountered an anomaly while connecting to the core. Please check your connection and try again.";
+                    return newMsgs;
+                }
+                return [...prev, { role: "assistant", content: "Sorry, I encountered an anomaly while connecting to the core. Please check your connection and try again." }];
+            });
         } finally {
             setIsLoading(false);
         }

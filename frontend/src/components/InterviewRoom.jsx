@@ -187,13 +187,17 @@ Rules:
             const res = await fetch(`${BACKEND_URL}`, {
                 method: "POST",
                 headers: COMMON_HEADERS,
-                body: JSON.stringify({ transcript })
+                body: JSON.stringify({ messages: context })
             });
             const data = await res.json();
-            speak(data.message);
+            if (data.status) {
+                speak(data.message);
+            } else {
+                throw new Error(data.message || "Failed to get AI response");
+            }
         } catch (err) {
             console.error(err);
-            speak("Sorry, something went wrong.");
+            speak("Sorry, I encountered a connection issue. I'll stay here if you want to try again.");
         }
     };
 
@@ -203,7 +207,7 @@ Rules:
         setStarted(true);
         enterFullscreen();
         callAI(messages);
-    }, []);
+    }, [role, difficulty, started, enterFullscreen, messages]);
 
     useEffect(() => {
         if (phase !== "listening") return;
