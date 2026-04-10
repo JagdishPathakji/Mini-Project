@@ -8,16 +8,7 @@ import toast from "react-hot-toast";
 
 const BACKEND_URL = `${API_BASE_URL}/user/ai/interview`;
 const MAX_VIOLATIONS = 3;
-
-/*  ──────────────────────────────────────────────
-    TURN-BASED STATES
-    IDLE        → waiting to begin
-    AI_THINKING → backend call in-flight
-    AI_SPEAKING → TTS playing AI response
-    USER_TURN   → microphone open, user speaking
-    PROCESSING  → silence detected, preparing to send
-    ENDED       → interview finished
-    ────────────────────────────────────────────── */
+const SILENCE_TIMEOUT_MS = 3000;
 
 export default function InterviewRoom() {
     const location = useLocation();
@@ -25,9 +16,9 @@ export default function InterviewRoom() {
     const { role, difficulty, jobDescription } = location.state || {};
 
     // ── Core State ───────────────────────────────
-    const [phase, setPhase] = useState("IDLE");          // state machine
-    const [messages, setMessages] = useState([]);         // chat history [{role, content}]
-    const [currentAIText, setCurrentAIText] = useState(""); // live AI text being spoken
+    const [phase, setPhase] = useState("IDLE");
+    const [messages, setMessages] = useState([]);
+    const [currentAIText, setCurrentAIText] = useState("");
     const [questionCount, setQuestionCount] = useState(0);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
@@ -35,16 +26,18 @@ export default function InterviewRoom() {
     const [violations, setViolations] = useState(0);
     const [tabWarningVisible, setTabWarningVisible] = useState(false);
     const [interviewStarted, setInterviewStarted] = useState(false);
-    const [typingText, setTypingText] = useState("");
+    const [liveTranscript, setLiveTranscript] = useState("");
 
     // ── Refs ─────────────────────────────────────
     const chatEndRef = useRef(null);
     const timerRef = useRef(null);
     const silenceTimerRef = useRef(null);
-    const utteranceRef = useRef(null);
-    const lastTranscriptRef = useRef("");
     const phaseRef = useRef(phase);
-    const isSpeakingRef = useRef(false);
+    const messagesRef = useRef(messages);
+    const transcriptRef = useRef("");
+    const questionCountRef = useRef(0);
+    const isMutedRef = useRef(false);
+    const micStartAttemptRef = useRef(null);
 
     // ── Speech Recognition ───────────────────────
     const {
@@ -54,8 +47,19 @@ export default function InterviewRoom() {
         browserSupportsSpeechRecognition
     } = useSpeechRecognition();
 
-    // Keep phaseRef in sync
+    // ── Keep refs in sync ────────────────────────
     useEffect(() => { phaseRef.current = phase; }, [phase]);
+    useEffect(() => { messagesRef.current = messages; }, [messages]);
+    useEffect(() => { questionCountRef.current = questionCount; }, [questionCount]);
+    useEffect(() => { isMutedRef.current = isMuted; }, [isMuted]);
+
+    // ── Sync transcript to ref and state ─────────
+    useEffect(() => {
+        transcriptRef.current = transcript;
+        if (phaseRef.current === "USER_TURN" && transcript) {
+            setLiveTranscript(transcript);
+        }
+    }, [transcript]);
 
     // ── Redirect if no setup data ────────────────
     useEffect(() => {
@@ -81,7 +85,7 @@ export default function InterviewRoom() {
     // ── Auto-scroll ──────────────────────────────
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages, typingText, currentAIText]);
+    }, [messages, liveTranscript, currentAIText]);
 
     // ── Tab Monitoring ───────────────────────────
     useEffect(() => {
@@ -111,7 +115,10 @@ export default function InterviewRoom() {
     // ── TTS Speak Function ───────────────────────
     const speak = useCallback((text) => {
         return new Promise((resolve) => {
-            if (isMuted || !text) { resolve(); return; }
+            if (isMutedRef.current || !text) {
+                resolve();
+                return;
+            }
 
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
@@ -119,29 +126,49 @@ export default function InterviewRoom() {
             utterance.pitch = 1.0;
             utterance.volume = 1;
 
-            // Try to pick a good voice
             const voices = window.speechSynthesis.getVoices();
             const preferred = voices.find(v =>
                 v.name.includes("Google") || v.name.includes("Samantha") || v.name.includes("Daniel")
             ) || voices.find(v => v.lang.startsWith("en")) || voices[0];
             if (preferred) utterance.voice = preferred;
 
-            utterance.onend = () => {
-                isSpeakingRef.current = false;
-                resolve();
-            };
-            utterance.onerror = () => {
-                isSpeakingRef.current = false;
-                resolve();
-            };
+            utterance.onend = () => resolve();
+            utterance.onerror = () => resolve();
 
-            isSpeakingRef.current = true;
-            utteranceRef.current = utterance;
             window.speechSynthesis.speak(utterance);
         });
-    }, [isMuted]);
+    }, []);
 
-    // ── Send to Backend ──────────────────────────
+    // ── Microphone Control ───────────────────────
+    const startMic = useCallback(() => {
+        // Clear any previous attempt
+        clearTimeout(micStartAttemptRef.current);
+
+        // Small delay to avoid race with speechSynthesis and previous stopListening
+        micStartAttemptRef.current = setTimeout(() => {
+            resetTranscript();
+            transcriptRef.current = "";
+            setLiveTranscript("");
+            clearTimeout(silenceTimerRef.current);
+
+            SpeechRecognition.startListening({ continuous: true, language: "en-US" })
+                .then(() => {
+                    console.log("[InterviewRoom] Mic started successfully");
+                })
+                .catch((err) => {
+                    console.error("[InterviewRoom] Mic start failed:", err);
+                    toast.error("Microphone access failed. Please check permissions.");
+                });
+        }, 500);
+    }, [resetTranscript]);
+
+    const stopMic = useCallback(() => {
+        clearTimeout(micStartAttemptRef.current);
+        clearTimeout(silenceTimerRef.current);
+        SpeechRecognition.stopListening();
+    }, []);
+
+    // ── Send conversation to Backend ─────────────
     const sendToAI = useCallback(async (conversationMessages) => {
         setPhase("AI_THINKING");
 
@@ -180,6 +207,8 @@ RULES:
 
             const aiText = data.message;
             const aiMessage = { role: "assistant", content: aiText };
+
+            // Update messages and question count
             setMessages(prev => [...prev, aiMessage]);
             setQuestionCount(prev => prev + 1);
 
@@ -190,22 +219,67 @@ RULES:
             setCurrentAIText("");
 
             // Check if interview is wrapping up
-            if (questionCount >= 9 || aiText.toLowerCase().includes("that concludes") || aiText.toLowerCase().includes("end of the interview")) {
+            const qCount = questionCountRef.current + 1;
+            if (qCount >= 10 || aiText.toLowerCase().includes("that concludes") || aiText.toLowerCase().includes("end of the interview")) {
                 setPhase("ENDED");
                 clearInterval(timerRef.current);
                 toast.success("Interview completed!");
                 return;
             }
 
-            // Now user's turn
+            // Now it's the user's turn — start mic
             setPhase("USER_TURN");
+            startMic();
 
         } catch (err) {
             console.error("AI Error:", err);
             toast.error(err.message || "Failed to connect to AI");
-            setPhase("USER_TURN"); // Let user retry
+            // Let user retry by opening mic
+            setPhase("USER_TURN");
+            startMic();
         }
-    }, [difficulty, role, jobDescription, speak, questionCount]);
+    }, [difficulty, role, jobDescription, speak, startMic]);
+
+    // ── Send user's answer ───────────────────────
+    const submitUserAnswer = useCallback((userText) => {
+        if (!userText || !userText.trim()) return;
+
+        stopMic();
+        setLiveTranscript("");
+
+        const userMsg = { role: "user", content: userText.trim() };
+        
+        // Add user message, then grab latest messages and send
+        setMessages(prev => {
+            const updated = [...prev, userMsg];
+            // Use setTimeout to call sendToAI after state is committed
+            setTimeout(() => sendToAI(updated), 50);
+            return updated;
+        });
+    }, [stopMic, sendToAI]);
+
+    // ── Silence Detection ────────────────────────
+    useEffect(() => {
+        if (phase !== "USER_TURN" || !listening) return;
+
+        // Whenever transcript changes, reset the silence timer
+        if (transcript && transcript.trim().length > 0) {
+            clearTimeout(silenceTimerRef.current);
+
+            silenceTimerRef.current = setTimeout(() => {
+                // Double check we're still in USER_TURN
+                if (phaseRef.current === "USER_TURN") {
+                    const currentText = transcriptRef.current.trim();
+                    if (currentText.length > 0) {
+                        console.log("[InterviewRoom] Silence detected, submitting:", currentText);
+                        submitUserAnswer(currentText);
+                    }
+                }
+            }, SILENCE_TIMEOUT_MS);
+        }
+
+        return () => clearTimeout(silenceTimerRef.current);
+    }, [transcript, phase, listening, submitUserAnswer]);
 
     // ── Start Interview ──────────────────────────
     const startInterview = useCallback(async () => {
@@ -214,118 +288,67 @@ RULES:
         const greeting = `Hello! Welcome to your ${difficulty} level ${role} interview. I'm your AI interviewer today. Let's begin — I'll ask you a series of technical questions. Take your time, think through each answer, and speak clearly. Let's start with the first question.`;
 
         const greetMsg = { role: "assistant", content: greeting };
-        setMessages([greetMsg]);
+        const readyMsg = { role: "user", content: "I'm ready. Please ask me the first question." };
+        setMessages([greetMsg, readyMsg]);
 
         setPhase("AI_SPEAKING");
         setCurrentAIText(greeting);
         await speak(greeting);
         setCurrentAIText("");
 
-        // Send initial prompt to get first question
-        const firstPrompt = [
-            greetMsg,
-            { role: "user", content: "I'm ready. Please ask me the first question." }
-        ];
-        setMessages(prev => [...prev, { role: "user", content: "I'm ready. Please ask me the first question." }]);
-        await sendToAI(firstPrompt);
+        // Send to get first question
+        await sendToAI([greetMsg, readyMsg]);
     }, [difficulty, role, speak, sendToAI]);
 
-    // ── Silence Detection ────────────────────────
-    useEffect(() => {
-        if (phase !== "USER_TURN" || !listening) return;
+    // ── Manual Send (button click) ───────────────
+    const handleManualSend = useCallback(() => {
+        if (phaseRef.current !== "USER_TURN") return;
 
-        // When transcript changes, reset silence timer
-        if (transcript !== lastTranscriptRef.current) {
-            lastTranscriptRef.current = transcript;
-            clearTimeout(silenceTimerRef.current);
-
-            // Set a 2.5 second silence timeout
-            silenceTimerRef.current = setTimeout(() => {
-                if (phaseRef.current === "USER_TURN" && transcript.trim().length > 0) {
-                    handleUserDoneSpeaking();
-                }
-            }, 2500);
-        }
-    }, [transcript, phase, listening]);
-
-    // ── Handle user finishing speaking ────────────
-    const handleUserDoneSpeaking = useCallback(() => {
-        SpeechRecognition.stopListening();
-        clearTimeout(silenceTimerRef.current);
-
-        const userText = transcript.trim();
-        if (!userText) {
-            setPhase("USER_TURN");
+        const currentText = transcriptRef.current.trim();
+        if (!currentText) {
+            toast.error("Please speak your answer first.");
             return;
         }
 
-        const userMsg = { role: "user", content: userText };
-        setMessages(prev => [...prev, userMsg]);
-        resetTranscript();
-        lastTranscriptRef.current = "";
+        console.log("[InterviewRoom] Manual send:", currentText);
+        submitUserAnswer(currentText);
+    }, [submitUserAnswer]);
 
-        // Send full conversation to AI
-        setMessages(prev => {
-            sendToAI(prev);
-            return prev;
+    // ── End Interview ────────────────────────────
+    const endInterview = useCallback(() => {
+        setPhase("ENDED");
+        stopMic();
+        window.speechSynthesis.cancel();
+        clearInterval(timerRef.current);
+        setShowExitConfirm(false);
+    }, [stopMic]);
+
+    // ── Toggle Mute ──────────────────────────────
+    const toggleMute = useCallback(() => {
+        setIsMuted(prev => {
+            if (!prev) {
+                window.speechSynthesis.cancel();
+            }
+            return !prev;
         });
-    }, [transcript, resetTranscript, sendToAI]);
+    }, []);
 
-    // ── Start Listening when USER_TURN ───────────
-    useEffect(() => {
-        if (phase === "USER_TURN" && !listening && !isSpeakingRef.current) {
-            resetTranscript();
-            lastTranscriptRef.current = "";
-            SpeechRecognition.startListening({ continuous: true, language: "en-US" });
-        }
-    }, [phase, listening, resetTranscript]);
+    // ── Skip AI Speaking ─────────────────────────
+    const skipSpeaking = useCallback(() => {
+        window.speechSynthesis.cancel();
+        setCurrentAIText("");
+        // The speak() promise will resolve via onerror/onend, then flow continues naturally
+    }, []);
 
-    // ── Stop everything on unmount ───────────────
+    // ── Cleanup on unmount ───────────────────────
     useEffect(() => {
         return () => {
             SpeechRecognition.stopListening();
             window.speechSynthesis.cancel();
             clearInterval(timerRef.current);
             clearTimeout(silenceTimerRef.current);
+            clearTimeout(micStartAttemptRef.current);
         };
-    }, []);
-
-    // ── Manual Send (button or Enter key) ────────
-    const handleManualSend = useCallback(() => {
-        if (phase !== "USER_TURN") return;
-        if (!transcript.trim()) {
-            toast.error("Please speak your answer first.");
-            return;
-        }
-        handleUserDoneSpeaking();
-    }, [phase, transcript, handleUserDoneSpeaking]);
-
-    // ── End Interview ────────────────────────────
-    const endInterview = useCallback(() => {
-        setPhase("ENDED");
-        SpeechRecognition.stopListening();
-        window.speechSynthesis.cancel();
-        clearInterval(timerRef.current);
-        clearTimeout(silenceTimerRef.current);
-        setShowExitConfirm(false);
-    }, []);
-
-    // ── Toggle Mute ──────────────────────────────
-    const toggleMute = useCallback(() => {
-        if (!isMuted) {
-            window.speechSynthesis.cancel();
-        }
-        setIsMuted(prev => !prev);
-    }, [isMuted]);
-
-    // ── Skip AI Speaking ─────────────────────────
-    const skipSpeaking = useCallback(() => {
-        window.speechSynthesis.cancel();
-        isSpeakingRef.current = false;
-        setCurrentAIText("");
-        if (phaseRef.current === "AI_SPEAKING") {
-            setPhase("USER_TURN");
-        }
     }, []);
 
     // ── Browser Support Check ────────────────────
@@ -351,7 +374,7 @@ RULES:
             case "IDLE": return "Ready to Begin";
             case "AI_THINKING": return "AI is Thinking...";
             case "AI_SPEAKING": return "AI is Speaking...";
-            case "USER_TURN": return "Your Turn — Speak Now";
+            case "USER_TURN": return listening ? "Your Turn — Speak Now" : "Starting Mic...";
             case "PROCESSING": return "Processing...";
             case "ENDED": return "Interview Complete";
             default: return "";
@@ -426,15 +449,12 @@ RULES:
                         </div>
 
                         <div className="flex items-center gap-3">
-                            {/* Timer */}
                             {interviewStarted && (
                                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10">
                                     <Clock size={14} className="text-neutral-400" />
                                     <span className="text-sm font-mono font-bold text-neutral-300">{formatTime(elapsedTime)}</span>
                                 </div>
                             )}
-
-                            {/* Question Counter */}
                             {questionCount > 0 && (
                                 <div className="px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20">
                                     <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400">Q{questionCount}</span>
@@ -510,7 +530,7 @@ RULES:
                             </div>
                         ))}
 
-                        {/* Live AI Typing/Speaking Indicator */}
+                        {/* Live AI Speaking Text */}
                         {currentAIText && phase === "AI_SPEAKING" && (
                             <div className="flex w-full justify-start animate-in slide-in-from-bottom-2">
                                 <div className="mr-3 flex-shrink-0 mt-1">
@@ -548,15 +568,15 @@ RULES:
                             </div>
                         )}
 
-                        {/* Live Transcript (what user is saying) */}
-                        {phase === "USER_TURN" && transcript && (
+                        {/* Live Transcript — what user is currently saying */}
+                        {phase === "USER_TURN" && liveTranscript && (
                             <div className="flex w-full justify-end animate-in slide-in-from-bottom-2">
-                                <div className="max-w-[80%] rounded-2xl rounded-br-none px-5 py-4 text-sm leading-relaxed bg-white/5 border border-white/10 border-dashed text-neutral-400 italic">
+                                <div className="max-w-[80%] rounded-2xl rounded-br-none px-5 py-4 text-sm leading-relaxed bg-emerald-500/5 border border-emerald-500/20 border-dashed text-neutral-300">
                                     <div className="flex items-center gap-2 mb-2">
                                         <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400/60 not-italic">Listening...</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400/60">Listening...</span>
                                     </div>
-                                    {transcript}
+                                    {liveTranscript}
                                 </div>
                                 <div className="ml-3 flex-shrink-0 mt-1">
                                     <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shadow-[0_0_15px_-5px_rgba(52,211,153,0.4)]">
@@ -605,7 +625,7 @@ RULES:
                             </div>
 
                             {/* Microphone Visualizer */}
-                            {phase === "USER_TURN" && (
+                            {phase === "USER_TURN" && listening && (
                                 <div className="flex items-center justify-center gap-1 h-12 mb-4">
                                     {[...Array(12)].map((_, i) => (
                                         <div
@@ -687,7 +707,7 @@ RULES:
                                 {phase === "USER_TURN" && (
                                     <button
                                         onClick={handleManualSend}
-                                        disabled={!transcript.trim()}
+                                        disabled={!liveTranscript.trim()}
                                         className="w-full py-3 rounded-xl bg-white text-black font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-neutral-200 transition-all shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)] disabled:opacity-30 disabled:cursor-not-allowed"
                                     >
                                         <Send size={14} />
