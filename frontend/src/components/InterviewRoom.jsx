@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
-import { Mic, Radio, AlertCircle, ShieldAlert, LogOut, Send, Bot, User, CheckCircle2 } from "lucide-react";
+import { Mic, Radio, AlertCircle, ShieldAlert, LogOut, Send, Bot, User, PlayCircle, PauseCircle } from "lucide-react";
 import { API_BASE_URL, COMMON_HEADERS } from "../config";
 import Navbar from "./Navbar";
 
@@ -13,7 +13,7 @@ export default function InterviewRoom() {
     const navigate = useNavigate();
     const { role = "Software Engineer", difficulty = "Medium", jobDescription = "General description" } = location.state || {};
 
-    const [status, setStatus] = useState("initializing"); // initializing, speaking, listening, processing, terminated
+    const [status, setStatus] = useState("waiting"); // waiting, initializing, speaking, listening, processing, terminated
     const [messages, setMessages] = useState([]);
     const [started, setStarted] = useState(false);
 
@@ -58,7 +58,7 @@ export default function InterviewRoom() {
 
     // ─── PROCTORING LOGIC ───────────────────────────────────────────────────────
     const recordViolation = useCallback((reason) => {
-        if (status === "terminated" || !started) return;
+        if (status === "terminated" || !started || status === "waiting") return;
 
         const timestamp = new Date().toLocaleTimeString();
         setViolations(prev => {
@@ -81,7 +81,7 @@ export default function InterviewRoom() {
         const onFsChange = () => {
             const inFs = !!document.fullscreenElement;
             setIsFullscreen(inFs);
-            if (!inFs && status !== "terminated" && started) {
+            if (!inFs && status !== "terminated" && started && status !== "waiting") {
                 setShowFullscreenPrompt(true);
                 recordViolation("Exited fullscreen mode");
             }
@@ -92,13 +92,13 @@ export default function InterviewRoom() {
 
     useEffect(() => {
         const handleVisibility = () => {
-            if (document.hidden && status !== "terminated" && started) {
+            if (document.hidden && status !== "terminated" && started && status !== "waiting") {
                 recordViolation("Switched tab/minimized window");
             }
         };
         document.addEventListener("visibilitychange", handleVisibility);
         const handleBlur = () => {
-            if (status !== "terminated" && started) {
+            if (status !== "terminated" && started && status !== "waiting") {
                 recordViolation("Left the interview window");
             }
         };
@@ -122,7 +122,6 @@ export default function InterviewRoom() {
         utterance.lang = "en-US";
         utterance.rate = 1.0;
         utterance.pitch = 1.0;
-        // Optionally select a preferred computer voice here if available
 
         utterance.onstart = () => {
             setStatus("speaking");
@@ -171,12 +170,20 @@ export default function InterviewRoom() {
         }
     }, [speak]);
 
-    // Initialize session flow
-    useEffect(() => {
-        if (started) return;
-        setStarted(true);
+    // Handle initial start explicitly from a user click
+    const handleStartInterview = () => {
+        // Unlock browser audio context explicitly via user interaction
+        speechSynthesis.cancel(); 
+        
+        // Enter fullscreen optionally but let's encourage it
+        const el = document.documentElement;
+        if (el.requestFullscreen) {
+            el.requestFullscreen().catch(err => console.log("Fullscreen blocked implicitly, continuing anyway", err));
+        }
 
-        // Core instructions to guide the llm
+        setStarted(true);
+        setStatus("initializing");
+
         const systemPrompt = `You are an expert technical interviewer called NEXA for a ${role} position. The difficulty level is ${difficulty}. Job Description: ${jobDescription}. 
 Rules:
 1. Speak completely naturally like a human interviewer.
@@ -193,7 +200,7 @@ Rules:
 
         setMessages(initMessages);
         callAI(initMessages);
-    }, [started, role, difficulty, jobDescription, callAI]);
+    };
 
     // Handle user submitting answer manually
     const submitUserResponse = useCallback((content) => {
@@ -224,7 +231,8 @@ Rules:
     // ─── RENDER HELPERS ─────────────────────────────────────────────────────────
     const phaseLabel = status === "speaking" ? "AI Speaking" :
                        status === "processing" ? "AI Thinking" :
-                       status === "initializing" ? "Initializing Session" :
+                       status === "initializing" ? "Connecting to AI..." :
+                       status === "waiting" ? "Awaiting Start" :
                        (listening ? "Your Turn (Listening)" : "Ready to Input");
 
     const phaseColorClass = status === "speaking" ? "text-amber-400" :
@@ -279,6 +287,37 @@ Rules:
             {/* Ambient Animated Background Gradients */}
             <div className="absolute top-[10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/10 blur-[130px] pointer-events-none" />
             <div className="absolute bottom-[0%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-600/10 blur-[130px] pointer-events-none" />
+
+            {/* If NOT Started, obscure the main room with a clean Waiting state overlay */}
+            {!started && (
+                <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md pt-16">
+                    <div className="bg-[#0a0a0a] border border-white/10 rounded-[2rem] p-8 max-w-lg w-full text-center shadow-2xl animate-in zoom-in-95 duration-500 relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent pointer-events-none"></div>
+                        <div className="relative z-10">
+                            <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_-5px_rgba(52,211,153,0.3)]">
+                                <Bot size={36} className="text-emerald-400" />
+                            </div>
+                            <h2 className="text-3xl font-extrabold mb-3">Ready to Begin?</h2>
+                            <p className="text-neutral-400 text-sm mb-8 leading-relaxed">
+                                You are about to join a proctored AI interview for the <strong className="text-white">{role}</strong> role. Ensure you are in a quiet environment and your microphone works.
+                            </p>
+                            
+                            <button 
+                                onClick={handleStartInterview} 
+                                className="w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold transition-all shadow-[0_0_20px_rgba(52,211,153,0.4)] hover:scale-[1.02]"
+                            >
+                                Start Interview Now
+                            </button>
+                            <button 
+                                onClick={() => navigate("/ai-interview")} 
+                                className="w-full py-4 rounded-xl text-neutral-400 hover:text-white text-sm font-bold mt-2 transition-all hover:bg-white/5"
+                            >
+                                Cancel & Return Setup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <main className="pt-24 pb-12 max-w-7xl mx-auto px-6 relative z-10 flex flex-col h-screen">
                 
@@ -464,7 +503,7 @@ Rules:
                                                 <p className="text-neutral-500 text-sm italic">Listening to your response...</p>
                                             )}
                                             
-                                            <div className="absolute right-2 top-2">
+                                            <div className="absolute right-2 top-3">
                                                 <button 
                                                     onClick={() => setShowManual(true)} 
                                                     className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/40 border border-blue-500/50 rounded-lg text-[10px] uppercase tracking-wider font-bold text-blue-300 transition-colors shadow-lg"
@@ -486,16 +525,17 @@ Rules:
                                             }}
                                             className={`px-4 py-2 rounded-xl font-bold uppercase tracking-widest text-[10px] flex items-center gap-2 transition-all border ${listening ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'}`}
                                         >
+                                            {listening ? <PauseCircle size={14} /> : <PlayCircle size={14} />} 
                                             {listening ? 'Pause Mic' : 'Resume Mic'}
                                         </button>
-                                        
+
                                         <button 
                                             onClick={handleMicSendClick}
                                             disabled={!transcript.trim()}
-                                            className={`px-6 py-2.5 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center gap-2 transition-all shadow-lg
+                                            className={`px-6 py-2.5 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center gap-2 transition-all shadow-[0_0_20px_-5px_rgba(52,211,153,0.5)]
                                             ${transcript.trim() 
-                                                ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_20px_-5px_rgba(52,211,153,0.5)]" 
-                                                : "bg-white/5 text-neutral-500 cursor-not-allowed border border-white/5"}`}
+                                                ? "bg-emerald-500 hover:bg-emerald-400 text-black border border-emerald-500/50" 
+                                                : "bg-white/5 text-neutral-500 cursor-not-allowed border border-white/10"}`}
                                         >
                                             <Send size={14} /> Finish & Send
                                         </button>
@@ -528,8 +568,8 @@ Rules:
                                         <button 
                                             onClick={() => submitUserResponse(manualInput)}
                                             disabled={!manualInput.trim()}
-                                            className={`p-3 rounded-xl transition-all flex items-center justify-center 
-                                                ${manualInput.trim() ? "bg-emerald-500 hover:bg-emerald-400 text-black shadow-[0_0_15px_-5px_rgba(52,211,153,0.5)]" : "bg-white/5 text-neutral-500 border border-white/10"}`}
+                                            className={`p-3 rounded-xl transition-all flex items-center justify-center border
+                                                ${manualInput.trim() ? "bg-emerald-500 hover:bg-emerald-400 text-black border-emerald-500/50 shadow-[0_0_15px_-5px_rgba(52,211,153,0.5)]" : "bg-white/5 text-neutral-500 border-white/10"}`}
                                         >
                                             <Send size={18} />
                                         </button>
@@ -544,7 +584,7 @@ Rules:
                             )}
 
                             {/* State: Not Listening / Other */}
-                            {status !== "listening" && (
+                            {status !== "listening" && status !== "waiting" && (
                                 <div className="flex items-center justify-center h-16 bg-white/[0.02] border border-white/5 rounded-xl">
                                     <p className="text-neutral-500 text-xs tracking-widest uppercase font-bold flex items-center gap-2 animate-pulse">
                                         {status === "initializing" && "Preparing session"}
@@ -569,8 +609,8 @@ Rules:
                             <h3 className="text-2xl font-bold mb-2">Exit Interview?</h3>
                             <p className="text-neutral-400 text-sm mb-8 leading-relaxed">Your session data will be lost. Are you sure you want to exit the assessment?</p>
                             <div className="grid grid-cols-2 gap-4 w-full">
-                                <button onClick={() => setShowExitModal(false)} className="px-5 py-3.5 rounded-xl border border-white/10 bg-white/5 text-sm font-bold text-neutral-300 hover:bg-white/10">Return</button>
-                                <button onClick={exitInterview} className="px-5 py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold shadow-lg shadow-red-500/30">Confirm Exit</button>
+                                <button onClick={() => setShowExitModal(false)} className="px-5 py-3.5 rounded-xl border border-white/10 bg-white/5 text-sm font-bold text-neutral-300 hover:bg-white/10 transition-colors">Return</button>
+                                <button onClick={exitInterview} className="px-5 py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold shadow-lg shadow-red-500/30 transition-colors">Confirm Exit</button>
                             </div>
                         </div>
                     </div>
