@@ -56,7 +56,7 @@ export default function VerifyOtp() {
 
   return (
     <div className="min-h-screen bg-[#030303] text-white flex flex-col items-center justify-center p-4 sm:p-6 selection:bg-white selection:text-black relative overflow-hidden">
-      
+
       {/* Ambient Animated Background Gradients */}
       <div className="absolute top-[-20%] left-[30%] w-[40%] h-[40%] rounded-full bg-emerald-600/10 blur-[120px] pointer-events-none" />
 
@@ -70,7 +70,7 @@ export default function VerifyOtp() {
 
           <div className="mb-10 text-center relative z-10">
             <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
-               <KeyRound size={32} className="text-amber-400" />
+              <KeyRound size={32} className="text-amber-400" />
             </div>
             <h2 className="text-3xl font-extrabold tracking-tight bg-gradient-to-b from-white to-neutral-400 bg-clip-text text-transparent">Verify Email</h2>
             <p className="text-neutral-400 mt-2 text-sm leading-relaxed">

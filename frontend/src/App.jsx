@@ -7,7 +7,7 @@ import Signup from "./components/Signup";
 import VerifyOtp from "./components/VerifyOtp";
 import Dashboard from "./components/Dashboard";
 import Solve from "./components/Solve";
-import InterviewSetup from "./components/start-interview";
+import InterviewSetup from "./components/InterviewSetup";
 import InterviewRoom from "./components/InterviewRoom";
 import DSAInterviewSetup from "./components/DSAInterviewSetup";
 import DSAInterviewRoom from "./components/DSAInterviewRoom";

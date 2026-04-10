@@ -56,47 +56,7 @@ const aiController = async (req, res) => {
     }
 }
 
-const voiceinterview = async (req, res) => {
-    try {
-        const { messages } = req.body;
-
-        if (!messages || !Array.isArray(messages)) {
-            return res.status(400).send({
-                status: false,
-                message: "Messages array missing"
-            });
-        }
-
-        const { Ollama } = await import("ollama");
-
-        const ollama = new Ollama({
-            host: "https://ollama.com",
-            headers: {
-                Authorization: `Bearer ${process.env.OLLAMA_API_KEY}`
-            },
-        });
-
-        const response = await ollama.chat({
-            model: "gpt-oss:120b-cloud",
-            messages,
-            stream: false
-        });
-
-        return res.status(200).send({
-            status: true,
-            message: response.message.content
-        });
-
-    } catch (error) {
-        console.error(error);
-        return res.status(500).send({
-            status: false,
-            message: "Internal server error"
-        });
-    }
-};
 
 module.exports = {
-    voiceinterview,
     aiController
 } 
