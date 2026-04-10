@@ -91,6 +91,7 @@ Rules:
         silenceTimer.current = setTimeout(() => {
             SpeechRecognition.stopListening();
 
+
             const userMsg = {
                 role: "user",
                 content: transcript,
