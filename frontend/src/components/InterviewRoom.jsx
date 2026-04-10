@@ -467,15 +467,28 @@ Rules:
                                             <div className="absolute right-2 top-2">
                                                 <button 
                                                     onClick={() => setShowManual(true)} 
-                                                    className="px-2 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-[9px] uppercase tracking-wider font-bold text-neutral-400 transition-colors"
+                                                    className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/40 border border-blue-500/50 rounded-lg text-[10px] uppercase tracking-wider font-bold text-blue-300 transition-colors shadow-lg"
                                                 >
-                                                    Type instead
+                                                    Use Keyboard Instead
                                                 </button>
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex justify-end gap-3 w-full pl-16">
+                                    <div className="flex justify-between items-center w-full pl-16">
+                                        <button 
+                                            onClick={() => {
+                                                if (listening) {
+                                                    SpeechRecognition.stopListening();
+                                                } else {
+                                                    SpeechRecognition.startListening({ continuous: true, language: 'en-US' });
+                                                }
+                                            }}
+                                            className={`px-4 py-2 rounded-xl font-bold uppercase tracking-widest text-[10px] flex items-center gap-2 transition-all border ${listening ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'}`}
+                                        >
+                                            {listening ? 'Pause Mic' : 'Resume Mic'}
+                                        </button>
+                                        
                                         <button 
                                             onClick={handleMicSendClick}
                                             disabled={!transcript.trim()}
