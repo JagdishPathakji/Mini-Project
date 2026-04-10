@@ -1,15 +1,14 @@
-const OpenAI = require("openai");
+const Groq = require("groq-sdk");
 const { Ollama } = require("ollama");
 const fs = require("fs");
-const path = require("path");
 
-// ── Helper: Get OpenAI client for Whisper ───────────────────────────
-const getOpenAIClient = () => {
-    const apiKey = process.env.OPENAI_API_KEY;
+// ── Helper: Get Groq client for Whisper ─────────────────────────────
+const getGroqClient = () => {
+    const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
-        throw new Error("OPENAI_API_KEY is not set in environment variables");
+        throw new Error("GROQ_API_KEY is not set in environment variables");
     }
-    return new OpenAI({ apiKey });
+    return new Groq({ apiKey });
 };
 
 // ── Helper: Get Ollama client for AI evaluation ─────────────────────
@@ -90,7 +89,7 @@ IMPORTANT: Return ONLY valid JSON. No markdown, no explanation text outside the 
 
 // ════════════════════════════════════════════════════════════════════
 //  POST /user/interview/transcribe
-//  Accepts audio file → sends to OpenAI Whisper → returns text
+//  Accepts audio file → sends to Groq Whisper → returns text
 // ════════════════════════════════════════════════════════════════════
 const transcribe = async (req, res) => {
     try {
@@ -98,30 +97,44 @@ const transcribe = async (req, res) => {
             return res.status(400).json({ status: false, message: "No audio file provided" });
         }
 
-        const openai = getOpenAIClient();
+        console.log("Transcribing audio file:", req.file.path, "Size:", req.file.size, "Mime:", req.file.mimetype);
 
-        const transcription = await openai.audio.transcriptions.create({
+        const groq = getGroqClient();
+
+        const transcription = await groq.audio.transcriptions.create({
             file: fs.createReadStream(req.file.path),
-            model: "whisper-1",
+            model: "whisper-large-v3",
+            response_format: "json",
             language: "en",
-            response_format: "text",
+            temperature: 0.0,
         });
+
+        console.log("Transcription result:", transcription.text);
 
         // Clean up the uploaded file
         fs.unlink(req.file.path, (err) => {
             if (err) console.error("Error deleting temp audio file:", err);
         });
 
+        const text = transcription.text || "";
+
+        if (!text.trim()) {
+            return res.status(200).json({
+                status: true,
+                text: "(no speech detected)",
+            });
+        }
+
         return res.status(200).json({
             status: true,
-            text: transcription.trim(),
+            text: text.trim(),
         });
     } catch (error) {
-        console.error("Whisper Transcription Error:", error.message);
+        console.error("Groq Whisper Transcription Error:", error.message);
 
         // Clean up file on error too
         if (req.file && req.file.path) {
-            fs.unlink(req.file.path, () => {});
+            fs.unlink(req.file.path, () => { });
         }
 
         return res.status(500).json({
@@ -246,7 +259,6 @@ Evaluate the answer and generate the next question. Do NOT repeat any previously
             parsed = JSON.parse(jsonMatch ? jsonMatch[0] : rawResponse);
         } catch (parseErr) {
             console.error("Failed to parse AI evaluate response:", rawResponse);
-            // Provide a fallback
             parsed = {
                 score: 5,
                 feedback: "Your answer covered some key points. Try to provide more specific examples.",

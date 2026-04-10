@@ -94,7 +94,7 @@ export default function InterviewSetup() {
                         AI Mock Interview
                     </h1>
                     <p className="text-base md:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed">
-                        Speak your answers naturally. Our AI listens via Whisper, evaluates in real-time, and adapts questions to your skills.
+                        A fully oral interview experience. AI speaks questions aloud, Whisper transcribes your voice, and you get real-time scoring.
                     </p>
                 </div>
 
@@ -236,7 +236,7 @@ export default function InterviewSetup() {
                         {[
                             { icon: Mic, color: "text-violet-400", title: "Voice Input", desc: "Speak naturally, Whisper transcribes" },
                             { icon: Brain, color: "text-cyan-400", title: "AI Evaluation", desc: "Real-time scoring & feedback" },
-                            { icon: Target, color: "text-amber-400", title: "Adaptive Questions", desc: "JD-driven or role-based questions" },
+                            { icon: Target, color: "text-amber-400", title: "Voice Output", desc: "AI speaks questions aloud to you" },
                         ].map((card) => (
                             <div key={card.title} className="flex items-center gap-4 p-5 rounded-2xl bg-white/[0.02] border border-white/[0.04]">
                                 <card.icon size={20} className={card.color} />
