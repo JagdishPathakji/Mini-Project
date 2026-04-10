@@ -116,4 +116,4 @@ const voiceinterview = async (req, res) => {
 module.exports = {
     voiceinterview,
     aiController
-}
+} 
