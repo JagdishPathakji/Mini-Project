@@ -99,6 +99,11 @@ const transcribe = async (req, res) => {
 
         console.log("Transcribing audio file:", req.file.path, "Size:", req.file.size, "Mime:", req.file.mimetype);
 
+        if (req.file.size < 100) {
+            fs.unlink(req.file.path, () => {});
+            return res.status(200).json({ status: true, text: "" });
+        }
+
         const groq = getGroqClient();
 
         const transcription = await groq.audio.transcriptions.create({
@@ -132,6 +137,9 @@ const transcribe = async (req, res) => {
         });
     } catch (error) {
         console.error("Groq Whisper Transcription Error:", error.message);
+        console.error("Full error:", JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+        if (error.error) console.error("Groq error body:", JSON.stringify(error.error));
+        if (error.status) console.error("Groq HTTP status:", error.status);
 
         // Clean up file on error too
         if (req.file && req.file.path) {
@@ -142,6 +150,7 @@ const transcribe = async (req, res) => {
             status: false,
             message: "Failed to transcribe audio",
             error: error.message,
+            details: error.error || null,
         });
     }
 };

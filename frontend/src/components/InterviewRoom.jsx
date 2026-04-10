@@ -226,11 +226,8 @@ export default function InterviewRoom() {
         }
     }, []);
 
-    // ── Stop Recording ──────────────────────────────────────────────
     const stopRecording = useCallback(() => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-            // Request any remaining data before stopping
-            mediaRecorderRef.current.requestData();
             mediaRecorderRef.current.stop();
         }
     }, []);
@@ -244,6 +241,13 @@ export default function InterviewRoom() {
         setPhase(STATES.TRANSCRIBING);
 
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+
+        if (audioBlob.size < 100) {
+            console.error("Audio blob too small:", audioBlob.size);
+            setErrorMsg("Recording failed: Audio was empty or too short. Please try speaking again.");
+            setPhase(STATES.IDLE);
+            return;
+        }
 
         // Step 1: Transcribe via Groq Whisper
         let transcribedText = "";
