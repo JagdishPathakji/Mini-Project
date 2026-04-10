@@ -23,26 +23,24 @@ export default function InterviewRoom() {
 You are a professional interviewer for a ${role} position.
 Difficulty: ${difficulty}
 Job Description: ${jobDescription}
-Its verbal interview so dont ask to write something.
-Never provide code.
-Ask one question at a time.
+Verbal interview only. No code. Ask one question at a time.
             `,
         },
     ]);
 
-    // ✅ INIT SPEECH RECOGNITION (native)
+    // ✅ INIT SPEECH
     useEffect(() => {
         const SpeechRecognition =
             window.SpeechRecognition || window.webkitSpeechRecognition;
 
         if (!SpeechRecognition) {
-            alert("Speech Recognition not supported in this browser");
+            alert("Speech Recognition not supported");
             return;
         }
 
         const recognition = new SpeechRecognition();
         recognition.lang = "en-US";
-        recognition.continuous = false; // important
+        recognition.continuous = true;
         recognition.interimResults = true;
 
         recognition.onstart = () => {
@@ -52,38 +50,49 @@ Ask one question at a time.
 
         recognition.onresult = (event) => {
             let text = "";
+
             for (let i = event.resultIndex; i < event.results.length; i++) {
                 text += event.results[i][0].transcript;
             }
-            console.log("🗣️ Heard:", text);
+
             setTranscript(text);
         };
 
         recognition.onerror = (e) => {
-            console.error("Speech error:", e);
+            console.log("Speech error:", e.error);
+
+            if (e.error === "no-speech" || e.error === "aborted") {
+                restartListening();
+            }
         };
 
         recognition.onend = () => {
-            console.log("🛑 Mic stopped");
+            console.log("Mic ended");
         };
 
         recognitionRef.current = recognition;
     }, []);
 
-    // ✅ START LISTENING
-    const startListening = () => {
+    const restartListening = () => {
         if (!recognitionRef.current) return;
 
-        setTranscript("");
-
         try {
-            recognitionRef.current.start();
-        } catch (err) {
-            console.log("Restarting mic...");
-        }
+            recognitionRef.current.stop();
+        } catch { }
+
+        setTimeout(() => {
+            try {
+                recognitionRef.current.start();
+            } catch { }
+        }, 500);
     };
 
-    // ✅ TEXT TO SPEECH
+    const startListening = () => {
+        setTranscript("");
+        restartListening();
+    };
+
+    // ✅ SPEAK
     const speak = (text) => {
         if (!text) return;
 
@@ -99,13 +108,13 @@ Ask one question at a time.
         utterance.onend = () => {
             setTimeout(() => {
                 startListening();
-            }, 400);
+            }, 800);
         };
 
         speechSynthesis.speak(utterance);
     };
 
-    // ✅ CALL AI
+    // ✅ API CALL
     const callAI = async (context) => {
         try {
             const res = await fetch(BACKEND_URL, {
@@ -123,7 +132,7 @@ Ask one question at a time.
         }
     };
 
-    // ✅ START INTERVIEW (USER INTERACTION REQUIRED)
+    // ✅ START BUTTON (MANDATORY)
     const startInterview = async () => {
         if (started) return;
 
@@ -131,8 +140,7 @@ Ask one question at a time.
 
         try {
             await navigator.mediaDevices.getUserMedia({ audio: true });
-            console.log("Mic permission granted");
-        } catch (err) {
+        } catch {
             alert("Mic permission denied");
             return;
         }
@@ -140,7 +148,7 @@ Ask one question at a time.
         callAI(messages);
     };
 
-    // ✅ DETECT SILENCE
+    // ✅ SILENCE DETECTION
     useEffect(() => {
         if (phase !== "listening") return;
         if (!transcript.trim()) return;
@@ -148,7 +156,9 @@ Ask one question at a time.
         if (silenceTimer.current) clearTimeout(silenceTimer.current);
 
         silenceTimer.current = setTimeout(() => {
-            recognitionRef.current.stop();
+            try {
+                recognitionRef.current.stop();
+            } catch { }
 
             const userMsg = {
                 role: "user",
@@ -162,7 +172,7 @@ Ask one question at a time.
             });
 
             setTranscript("");
-        }, 2000);
+        }, 4000); // increased time
     }, [transcript, phase]);
 
     return (
@@ -182,7 +192,13 @@ Ask one question at a time.
                     </button>
                 )}
 
-                <p className="mb-4">Status: {phase}</p>
+                <p className="mb-4">
+                    {phase === "listening"
+                        ? "🎤 Speak now..."
+                        : phase === "ai-speaking"
+                            ? "🤖 AI speaking..."
+                            : "Idle"}
+                </p>
 
                 <div className="bg-neutral-900 p-4 rounded min-h-[100px]">
                     {transcript || "Waiting for your response..."}
