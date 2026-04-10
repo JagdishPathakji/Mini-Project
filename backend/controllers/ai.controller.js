@@ -41,7 +41,12 @@ const aiController = async (req, res) => {
         res.end();
     }
     catch (error) {
-        console.error("AI Controller Error:", error);
+        console.error("AI Controller Error Details:", {
+            message: error.message,
+            stack: error.stack,
+            host: process.env.OLLAMA_HOST || "https://ollama.com",
+            model: model || "gpt-oss:120b-cloud"
+        });
         if (!res.headersSent) {
             res.status(500).json({ status: false, message: "Internal Server Error during AI chat", error: error.message });
         }
@@ -92,7 +97,11 @@ const voiceinterview = async (req, res) => {
 
     }
     catch (error) {
-        console.error("Voice Interview AI Error:", error);
+        console.error("Voice Interview AI Error Details:", {
+            message: error.message,
+            stack: error.stack,
+            host: process.env.OLLAMA_HOST || "https://ollama.com"
+        });
         return res.status(500).send({
             status: false,
             message: "Internal server error",

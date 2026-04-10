@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { Mic, Radio, AlertCircle, ShieldAlert, LogOut, CheckCircle2 } from "lucide-react";
-import { API_BASE_URL } from "../config";
+import { API_BASE_URL, COMMON_HEADERS } from "../config";
 import Navbar from "./Navbar";
 
 const BACKEND_URL = `${API_BASE_URL}/user/ai/interview`;
@@ -152,10 +152,10 @@ Rules:
                 (e.ctrlKey && e.key === "Tab") ||
                 (e.metaKey) ||
                 (e.key === "PrintScreen") ||
-                (e.ctrlKey && e.shiftKey && e.key === "I") || 
+                (e.ctrlKey && e.shiftKey && e.key === "I") ||
                 (e.ctrlKey && e.shiftKey && e.key === "J") ||
                 (e.key === "F12") ||
-                (e.ctrlKey && e.key === "u")                  
+                (e.ctrlKey && e.key === "u")
             );
             if (blocked) {
                 e.preventDefault();
@@ -269,10 +269,10 @@ Rules:
 
                 {/* Core Layout Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
-                    
+
                     {/* LEFT COLUMN: Data & Transcripts */}
                     <div className="lg:col-span-2 flex flex-col gap-6 min-h-0">
-                        
+
                         {/* Status Bento Row */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-shrink-0">
                             <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4 backdrop-blur-md">
@@ -300,20 +300,20 @@ Rules:
 
                         {/* Transcript Box */}
                         <div className="flex-1 bg-white/[0.02] border border-white/[0.05] rounded-3xl p-6 backdrop-blur-md flex flex-col relative overflow-hidden group">
-                             <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
-                             <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-4 flex-shrink-0 flex items-center gap-2">
+                            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-4 flex-shrink-0 flex items-center gap-2">
                                 <Mic size={14} className={phase === 'listening' ? 'text-emerald-400 animate-pulse' : 'text-neutral-500'} />
                                 Live Transcript
-                             </p>
-                             <div className="flex-1 overflow-y-auto w-full text-lg md:text-2xl text-white font-medium leading-relaxed pb-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent pr-4">
+                            </p>
+                            <div className="flex-1 overflow-y-auto w-full text-lg md:text-2xl text-white font-medium leading-relaxed pb-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent pr-4">
                                 {transcript ? (
                                     <span className="text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">{transcript}</span>
                                 ) : (
                                     <span className="text-neutral-600 italic">Waiting for your response...</span>
                                 )}
-                             </div>
-                             
-                             {/* Fading bottom edge */}
+                            </div>
+
+                            {/* Fading bottom edge */}
                             <div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-[#0a0a0a] to-transparent pointer-events-none rounded-b-3xl"></div>
                         </div>
                     </div>
@@ -326,7 +326,7 @@ Rules:
                                 <Radio size={14} className={phase === 'ai-speaking' ? 'text-amber-400 animate-pulse' : 'text-neutral-500'} />
                                 NEXA Core
                             </h3>
-                            
+
                             {/* Glowing Orb Animation depending on state */}
                             <div className="relative mt-8">
                                 {phase === "ai-speaking" ? (

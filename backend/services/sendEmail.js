@@ -15,7 +15,7 @@ async function sendEmail(userData) {
 
         const sendSmtpEmail = {
             to: [{ email: userData.email }],
-            sender: { email: "jagdishgithub1@gmail.com", name: "NexInterview" },
+            sender: { email: "dholakiyayug11@gmail.com", name: "NexInterview" },
             subject: "NexInterview | OTP Verification",
             htmlContent: `
         <div style="background-color:#000000;padding:40px 0;font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
@@ -107,7 +107,11 @@ async function sendEmail(userData) {
         return true;
     }
     catch (err) {
-        console.error('Error sending email:', err.response?.body || err.message);
+        if (err.response && err.response.body) {
+            console.error('Brevo API Error Body:', JSON.stringify(err.response.body, null, 2));
+        } else {
+            console.error('Error sending email:', err.message);
+        }
         return false;
     }
 }
