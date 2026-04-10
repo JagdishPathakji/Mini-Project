@@ -16,10 +16,19 @@ export default function InterviewRoom() {
     const { transcript, resetTranscript } = useSpeechRecognition();
     const silenceTimer = useRef(null);
     const containerRef = useRef(null);
+    const messagesEndRef = useRef(null);
 
-    const [phase, setPhase] = useState("ai-speaking");
+    const [phase, setPhase] = useState("ai-speaking"); // ai-speaking, listening, processing
     const [started, setStarted] = useState(false);
     const [showExitModal, setShowExitModal] = useState(false);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages, phase]);
 
     // Anti-plagiarism state
     const [violations, setViolations] = useState(0);
@@ -177,12 +186,14 @@ Rules:
         utterance.onstart = () => setPhase("ai-speaking");
         utterance.onend = () => {
             setPhase("listening");
+            resetTranscript();
             SpeechRecognition.startListening({ continuous: true });
         };
         speechSynthesis.speak(utterance);
     };
 
     const callAI = async (context) => {
+        setPhase("processing");
         try {
             const res = await fetch(`${BACKEND_URL}`, {
                 method: "POST",
@@ -214,15 +225,18 @@ Rules:
         if (!transcript.trim()) return;
         if (silenceTimer.current) clearTimeout(silenceTimer.current);
         silenceTimer.current = setTimeout(() => {
+            // Stop listening immediately to prevent overlap
             SpeechRecognition.stopListening();
-            const userMsg = { role: "user", content: transcript };
+            const currentTranscript = transcript.trim();
+            const userMsg = { role: "user", content: currentTranscript };
+            
             setMessages(prev => {
                 const updated = [...prev, userMsg];
                 callAI(updated);
                 return updated;
             });
             resetTranscript();
-        }, 4000);
+        }, 2500); // Faster response time
     }, [transcript, phase]);
 
     // ─── Exit ──────────────────────────────────────────────────────────────────
@@ -286,9 +300,17 @@ Rules:
                             <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4 backdrop-blur-md">
                                 <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-1">Phase</p>
                                 <div className="flex items-center gap-2 font-semibold">
-                                    <div className={`w-2 h-2 rounded-full animate-pulse ${phase === 'ai-speaking' ? 'bg-amber-400 shadow-[0_0_10px_#fbbf24]' : 'bg-emerald-400 shadow-[0_0_10px_#34d399]'}`} />
-                                    <span className={phase === 'ai-speaking' ? 'text-amber-400' : 'text-emerald-400'}>
-                                        {phase === "ai-speaking" ? "Speaking" : "Listening"}
+                                    <div className={`w-2 h-2 rounded-full animate-pulse 
+                                        ${phase === 'ai-speaking' ? 'bg-amber-400 shadow-[0_0_10px_#fbbf24]' : 
+                                          phase === 'processing' ? 'bg-blue-400 shadow-[0_0_10px_#60a5fa]' : 
+                                          'bg-emerald-400 shadow-[0_0_10px_#34d399]'}`} 
+                                    />
+                                    <span className={
+                                        phase === 'ai-speaking' ? 'text-amber-400' : 
+                                        phase === 'processing' ? 'text-blue-400' : 
+                                        'text-emerald-400'
+                                    }>
+                                        {phase === "ai-speaking" ? "Speaking" : phase === "processing" ? "Thinking" : "Listening"}
                                     </span>
                                 </div>
                             </div>
@@ -298,23 +320,51 @@ Rules:
                             </div>
                         </div>
 
-                        {/* Transcript Box */}
-                        <div className="flex-1 bg-white/[0.02] border border-white/[0.05] rounded-3xl p-6 backdrop-blur-md flex flex-col relative overflow-hidden group">
-                            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
-                            <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-4 flex-shrink-0 flex items-center gap-2">
-                                <Mic size={14} className={phase === 'listening' ? 'text-emerald-400 animate-pulse' : 'text-neutral-500'} />
-                                Live Transcript
+                        {/* Conversation History Box */}
+                        <div className="flex-1 bg-white/[0.02] border border-white/[0.05] rounded-3xl p-6 backdrop-blur-md flex flex-col relative overflow-hidden group min-h-0">
+                            <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-4 flex-shrink-0 flex items-center justify-between">
+                                <span className="flex items-center gap-2">
+                                    <Radio size={14} className={phase === 'ai-speaking' ? 'text-amber-400 animate-pulse' : 'text-neutral-500'} />
+                                    Interview Session Log
+                                </span>
+                                <span className="text-[8px] opacity-40">Auto-scrolling active</span>
                             </p>
-                            <div className="flex-1 overflow-y-auto w-full text-lg md:text-2xl text-white font-medium leading-relaxed pb-4 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent pr-4">
-                                {transcript ? (
-                                    <span className="text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]">{transcript}</span>
-                                ) : (
-                                    <span className="text-neutral-600 italic">Waiting for your response...</span>
+                            
+                            <div className="flex-1 overflow-y-auto space-y-4 pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                                {messages.filter(m => m.role !== "system").map((msg, i) => (
+                                    <div key={i} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
+                                        <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm ${
+                                            msg.role === 'user' 
+                                            ? 'bg-white/10 text-white rounded-br-none border border-white/5' 
+                                            : 'bg-indigo-500/10 text-neutral-200 rounded-bl-none border border-indigo-500/20 shadow-[0_0_20px_-10px_rgba(99,102,241,0.3)]'
+                                        }`}>
+                                            {msg.content}
+                                        </div>
+                                    </div>
+                                ))}
+
+                                {phase === "processing" && (
+                                    <div className="flex items-center gap-3 text-neutral-500 italic text-xs animate-pulse pl-2">
+                                        <div className="flex gap-1">
+                                            <div className="w-1 h-1 bg-current rounded-full" />
+                                            <div className="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:0.2s]" />
+                                            <div className="w-1 h-1 bg-current rounded-full" />
+                                        </div>
+                                        NEXA is reflecting...
+                                    </div>
                                 )}
+                                <div ref={messagesEndRef} />
                             </div>
 
-                            {/* Fading bottom edge */}
-                            <div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-[#0a0a0a] to-transparent pointer-events-none rounded-b-3xl"></div>
+                            {/* Live Floating Transcript (Overlay at bottom) */}
+                            {phase === "listening" && transcript && (
+                                <div className="absolute bottom-4 left-6 right-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                    <p className="text-[8px] text-emerald-400 uppercase tracking-widest font-bold mb-1 flex items-center gap-2">
+                                        <Mic size={10} className="animate-pulse" /> Capturing...
+                                    </p>
+                                    <p className="text-white text-sm font-medium line-clamp-2">{transcript}</p>
+                                </div>
+                            )}
                         </div>
                     </div>
 
