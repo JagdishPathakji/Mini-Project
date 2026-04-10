@@ -109,10 +109,10 @@ const transcribe = async (req, res) => {
         const transcription = await groq.audio.transcriptions.create({
             file: fs.createReadStream(req.file.path),
             model: "whisper-large-v3-turbo",
-            prompt: "This is a technical interview answer. The speaker is answering questions about programming, software engineering, data structures, algorithms, React, Node.js, Python, JavaScript, SQL, databases, system design, and other technical topics.",
+            prompt: "Please transcribe this technical interview answer accurately. Do not add sentences like 'Thank you' or 'Thank you for watching' if the user did not say them. The speaker is answering questions about programming, software engineering, databases, and system design.",
             response_format: "json",
             language: "en",
-            temperature: 0.0,
+            temperature: 0.2, // slight temperature prevents getting stuck in repeating loops
         });
 
         console.log("Transcription result:", transcription.text);
@@ -122,12 +122,24 @@ const transcribe = async (req, res) => {
             if (err) console.error("Error deleting temp audio file:", err);
         });
 
-        const text = transcription.text || "";
+        let text = transcription.text || "";
+
+        // FILTER WHISPER HALLUCINATIONS
+        // Whisper often hallucinates these phrases if audio is quiet or noisy
+        const hallucinations = [
+            "thank you.", "thank you", "thank you for watching.", "thank you for watching",
+            "thank you very much.", "bye.", "bye", "you", "thanks", "thanks."
+        ];
+
+        if (hallucinations.includes(text.toLowerCase().trim())) {
+            console.log("Caught Whisper Hallucination, replacing with silent output.");
+            text = "";
+        }
 
         if (!text.trim()) {
             return res.status(200).json({
                 status: true,
-                text: "(no speech detected)",
+                text: "(no speech detected or audio was too quiet)",
             });
         }
 

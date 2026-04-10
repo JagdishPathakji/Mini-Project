@@ -517,12 +517,12 @@ export default function InterviewRoom() {
     //  MAIN INTERVIEW ROOM
     // ════════════════════════════════════════════════════════════════
     return (
-        <div className="min-h-screen bg-[#030303] text-white font-sans selection:bg-white selection:text-black relative overflow-hidden flex flex-col">
+        <div className="h-screen bg-[#030303] text-white font-sans selection:bg-white selection:text-black relative overflow-hidden flex flex-col">
             {/* Ambient Gradients */}
             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-violet-600/8 blur-[120px] pointer-events-none" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-600/6 blur-[120px] pointer-events-none" />
 
-            <Navbar />
+            <div className="shrink-0"><Navbar /></div>
 
             {/* ── Header Bar ── */}
             <div className="pt-20 px-6 pb-3 relative z-10 border-b border-white/[0.04]">
@@ -584,8 +584,8 @@ export default function InterviewRoom() {
             </div>
 
             {/* ── Chat Transcript ── */}
-            <div className="flex-1 overflow-y-auto px-6 py-6 relative z-10">
-                <div className="max-w-4xl mx-auto space-y-5">
+            <div className="flex-1 overflow-y-auto px-6 py-6 pb-32 relative z-10 scroll-smooth">
+                <div className="max-w-4xl mx-auto space-y-5 flex flex-col">
                     {transcript.map((item) => {
                         if (item.type === "question") {
                             return (
@@ -701,12 +701,12 @@ export default function InterviewRoom() {
                         </div>
                     )}
 
-                    <div ref={chatEndRef} />
+                    <div ref={chatEndRef} className="h-4" />
                 </div>
             </div>
 
             {/* ── Bottom Control Bar ── */}
-            <div className="relative z-10 border-t border-white/[0.06] bg-[#030303]/90 backdrop-blur-2xl">
+            <div className="absolute bottom-0 left-0 right-0 z-20 border-t border-white/[0.06] bg-[#030303]/90 backdrop-blur-2xl">
                 <div className="max-w-4xl mx-auto px-6 py-5 flex items-center justify-center gap-6">
 
                     {/* Error */}
