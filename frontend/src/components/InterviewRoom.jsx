@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
-import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
-import { API_BASE_URL, COMMON_HEADERS } from "../config";
 import Navbar from "./Navbar";
+import { API_BASE_URL, COMMON_HEADERS } from "../config";
 
 const BACKEND_URL = `${API_BASE_URL}/user/ai/interview`;
 
@@ -10,16 +9,11 @@ export default function InterviewRoom() {
     const location = useLocation();
     const { role, difficulty, jobDescription } = location.state || {};
 
-    const {
-        transcript,
-        resetTranscript,
-        browserSupportsSpeechRecognition,
-        isMicrophoneAvailable
-    } = useSpeechRecognition();
-
+    const recognitionRef = useRef(null);
     const silenceTimer = useRef(null);
 
-    const [phase, setPhase] = useState("idle"); // idle | ai-speaking | listening
+    const [transcript, setTranscript] = useState("");
+    const [phase, setPhase] = useState("idle");
     const [started, setStarted] = useState(false);
 
     const [messages, setMessages] = useState([
@@ -30,33 +24,68 @@ You are a professional interviewer for a ${role} position.
 Difficulty: ${difficulty}
 Job Description: ${jobDescription}
 Its verbal interview so dont ask to write something.
-Never provide code as output as it is verbal interview.
-Never provide markdown.
-
-Rules:
-- Ask ONE question at a time
-- Keep responses short
-- Speak naturally
-- Start with greeting and first question
+Never provide code.
+Ask one question at a time.
             `,
         },
     ]);
 
-    // ✅ Debug logs
+    // ✅ INIT SPEECH RECOGNITION (native)
     useEffect(() => {
-        console.log("Transcript:", transcript);
-    }, [transcript]);
+        const SpeechRecognition =
+            window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    useEffect(() => {
-        console.log("Supported:", browserSupportsSpeechRecognition);
-        console.log("Mic Available:", isMicrophoneAvailable);
-    }, []);
-
-    const speak = (text) => {
-        if (!text || !text.trim()) {
-            startListening();
+        if (!SpeechRecognition) {
+            alert("Speech Recognition not supported in this browser");
             return;
         }
+
+        const recognition = new SpeechRecognition();
+        recognition.lang = "en-US";
+        recognition.continuous = false; // important
+        recognition.interimResults = true;
+
+        recognition.onstart = () => {
+            console.log("🎤 Listening...");
+            setPhase("listening");
+        };
+
+        recognition.onresult = (event) => {
+            let text = "";
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                text += event.results[i][0].transcript;
+            }
+            console.log("🗣️ Heard:", text);
+            setTranscript(text);
+        };
+
+        recognition.onerror = (e) => {
+            console.error("Speech error:", e);
+        };
+
+        recognition.onend = () => {
+            console.log("🛑 Mic stopped");
+        };
+
+        recognitionRef.current = recognition;
+    }, []);
+
+    // ✅ START LISTENING
+    const startListening = () => {
+        if (!recognitionRef.current) return;
+
+        setTranscript("");
+
+        try {
+            recognitionRef.current.start();
+        } catch (err) {
+            console.log("Restarting mic...");
+        }
+    };
+
+    // ✅ TEXT TO SPEECH
+    const speak = (text) => {
+        if (!text) return;
 
         speechSynthesis.cancel();
 
@@ -68,24 +97,17 @@ Rules:
         utterance.onstart = () => setPhase("ai-speaking");
 
         utterance.onend = () => {
-            startListening();
+            setTimeout(() => {
+                startListening();
+            }, 400);
         };
 
         speechSynthesis.speak(utterance);
     };
 
-    const startListening = () => {
-        setPhase("listening");
-
-        setTimeout(() => {
-            SpeechRecognition.startListening(); // ❌ removed continuous (buggy)
-        }, 300);
-    };
-
+    // ✅ CALL AI
     const callAI = async (context) => {
         try {
-            console.log("Calling AI...");
-
             const res = await fetch(BACKEND_URL, {
                 method: "POST",
                 headers: COMMON_HEADERS,
@@ -93,17 +115,15 @@ Rules:
             });
 
             const data = await res.json();
-            console.log("AI:", data);
-
             speak(data.message);
 
         } catch (err) {
-            console.error("API ERROR:", err);
-            speak("Sorry, something went wrong.");
+            console.error(err);
+            speak("Something went wrong");
         }
     };
 
-    // ✅ Start Interview (MANDATORY USER INTERACTION)
+    // ✅ START INTERVIEW (USER INTERACTION REQUIRED)
     const startInterview = async () => {
         if (started) return;
 
@@ -113,13 +133,14 @@ Rules:
             await navigator.mediaDevices.getUserMedia({ audio: true });
             console.log("Mic permission granted");
         } catch (err) {
-            console.error("Mic permission denied", err);
+            alert("Mic permission denied");
             return;
         }
 
         callAI(messages);
     };
 
+    // ✅ DETECT SILENCE
     useEffect(() => {
         if (phase !== "listening") return;
         if (!transcript.trim()) return;
@@ -127,7 +148,7 @@ Rules:
         if (silenceTimer.current) clearTimeout(silenceTimer.current);
 
         silenceTimer.current = setTimeout(() => {
-            SpeechRecognition.stopListening();
+            recognitionRef.current.stop();
 
             const userMsg = {
                 role: "user",
@@ -140,8 +161,8 @@ Rules:
                 return updated;
             });
 
-            resetTranscript();
-        }, 3000);
+            setTranscript("");
+        }, 2000);
     }, [transcript, phase]);
 
     return (
@@ -161,11 +182,9 @@ Rules:
                     </button>
                 )}
 
-                <div className="mb-4">
-                    <p>Status: {phase}</p>
-                </div>
+                <p className="mb-4">Status: {phase}</p>
 
-                <div className="bg-neutral-900 p-4 rounded">
+                <div className="bg-neutral-900 p-4 rounded min-h-[100px]">
                     {transcript || "Waiting for your response..."}
                 </div>
 
