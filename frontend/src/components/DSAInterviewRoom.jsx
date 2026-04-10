@@ -50,6 +50,14 @@ export default function DSAInterviewRoom() {
     const [submitStage, setSubmitStage] = useState("");
     const [liveTestcases, setLiveTestcases] = useState([]);
 
+    // Console States
+    const [isConsoleOpen, setIsConsoleOpen] = useState(false);
+    const [consoleHeight, setConsoleHeight] = useState(300);
+    const [isRunning, setIsRunning] = useState(false);
+    const [runResults, setRunResults] = useState(null);
+    const [showRunResult, setShowRunResult] = useState(false);
+    const [activeTestcaseTab, setActiveTestcaseTab] = useState(0);
+
     const languages = ["python", "javascript", "java", "cpp"];
 
     const timerRef = useRef(null);
@@ -131,6 +139,13 @@ export default function DSAInterviewRoom() {
         toast.success("Interview finished!");
         setTimeout(() => navigate("/dashboard"), 3000);
     };
+
+    // Reset Console State on Question Change
+    useEffect(() => {
+        setRunResults(null);
+        setActiveTestcaseTab(0);
+        setShowRunResult(false);
+    }, [currentIndex]);
 
     const handleCodeChange = (value) => {
         const newCodes = [...codes];
@@ -224,6 +239,44 @@ export default function DSAInterviewRoom() {
         }
     };
 
+    const handleRun = async () => {
+        if (!codes[currentIndex].trim()) {
+            toast.error("Code cannot be empty");
+            return;
+        }
+
+        setIsRunning(true);
+        setShowRunResult(true);
+        setIsConsoleOpen(true);
+        setRunResults(null);
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/question/runcode`, {
+                method: "POST",
+                credentials: "include",
+                headers: COMMON_HEADERS,
+                body: JSON.stringify({
+                    qno: questions[currentIndex].qno,
+                    code: codes[currentIndex],
+                    language,
+                    testcases: questions[currentIndex].sampleTestcases
+                })
+            });
+
+            const data = await response.json();
+            if (response.ok && data.status) {
+                setRunResults(data.results);
+            } else {
+                toast.error(data.message || "Failed to run testcases");
+            }
+        } catch (error) {
+            console.error("Run error:", error);
+            toast.error("An error occurred while running");
+        } finally {
+            setIsRunning(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-[#030303] flex items-center justify-center">
@@ -244,6 +297,27 @@ export default function DSAInterviewRoom() {
             const newWidth = startWidth + ((e.clientX - startX) / containerWidth) * 100;
             if (newWidth > 20 && newWidth < 80) {
                 setLeftWidth(newWidth);
+            }
+        };
+
+        const stopDrag = () => {
+            document.removeEventListener('mousemove', doDrag);
+            document.removeEventListener('mouseup', stopDrag);
+        };
+
+        document.addEventListener('mousemove', doDrag);
+        document.addEventListener('mouseup', stopDrag);
+    };
+
+    const startDrag = (e) => {
+        e.preventDefault();
+        const startY = e.clientY;
+        const startHeight = consoleHeight;
+
+        const doDrag = (e) => {
+            const newHeight = startHeight - (e.clientY - startY);
+            if (newHeight > 100 && newHeight < window.innerHeight - 200) {
+                setConsoleHeight(newHeight);
             }
         };
 
@@ -617,8 +691,14 @@ export default function DSAInterviewRoom() {
                             )}
                         </div>
 
-                        {/* Submit Button */}
+                        {/* Run & Submit Buttons */}
                         <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleRun}
+                                disabled={isRunning || isSubmitting}
+                                className={`px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[11px] font-bold uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all flex items-center gap-2 text-neutral-300 shadow-sm ${isRunning ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                <Play size={14} className="text-emerald-400" /> {isRunning ? "Running" : "Run"}
+                            </button>
                             <button
                                 onClick={handleSubmit}
                                 disabled={isSubmitting}
@@ -635,7 +715,7 @@ export default function DSAInterviewRoom() {
                     </div>
 
                     {/* Monaco Editor */}
-                    <div className="flex-1 overflow-hidden relative z-10 bg-[#0a0a0a]">
+                    <div className="flex-1 overflow-hidden relative z-10 bg-[#0a0a0a]" style={{ height: isConsoleOpen ? `calc(100% - ${consoleHeight}px)` : '100%' }}>
                         <Editor
                             height="100%"
                             language={language}
@@ -659,6 +739,99 @@ export default function DSAInterviewRoom() {
                             }}
                         />
                     </div>
+
+                    {/* Draggable Console Area */}
+                    <div
+                        className="h-1 bg-white/5 hover:bg-white/20 cursor-row-resize z-50 transition-colors"
+                        onMouseDown={startDrag}
+                    />
+
+                    {/* Console Header/Toggle */}
+                    <div className="flex flex-shrink-0 items-center justify-between px-4 py-2 bg-[#0a0a0a] border-t border-white/10 cursor-pointer select-none"
+                        onClick={() => setIsConsoleOpen(!isConsoleOpen)}>
+                        <div className="flex items-center gap-2 text-neutral-400 font-bold text-[11px] uppercase tracking-widest hover:text-white transition-colors">
+                            <TerminalSquare size={14} /> Console {isConsoleOpen ? "▼" : "▲"}
+                        </div>
+                    </div>
+
+                    {/* Console Body */}
+                    {isConsoleOpen && (
+                        <div style={{ height: consoleHeight }} className="flex flex-col bg-[#0a0a0a] border-t border-white/5 relative z-40 overflow-hidden text-sm">
+                            <div className="flex items-center gap-2 px-2 py-2 border-b border-white/5 bg-white/[0.02]">
+                                <button onClick={() => setShowRunResult(false)} className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all ${!showRunResult ? "bg-white/10 text-white shadow-inner" : "text-neutral-500 hover:text-white hover:bg-white/5"}`}>Testcases</button>
+                                <button onClick={() => setShowRunResult(true)} className={`px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all ${showRunResult ? "bg-white/10 text-white shadow-inner" : "text-neutral-500 hover:text-white hover:bg-white/5"}`}>Test Result</button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-white/10">
+                                {questions[currentIndex]?.sampleTestcases && !showRunResult ? (
+                                    <div className="flex flex-col h-full gap-4">
+                                        <div className="flex gap-2">
+                                            {questions[currentIndex].sampleTestcases.map((_, i) => (
+                                                <button key={i} onClick={() => setActiveTestcaseTab(i)} className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${activeTestcaseTab === i ? "bg-white/10 text-white border border-white/20" : "bg-white/[0.02] text-neutral-400 border border-white/5 hover:bg-white/5"}`}>Case {i + 1}</button>
+                                            ))}
+                                        </div>
+                                        {questions[currentIndex].sampleTestcases[activeTestcaseTab] && (
+                                            <div className="flex-1 flex flex-col gap-2">
+                                                <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Input</div>
+                                                <div className="w-full flex-1 min-h-[60px] bg-[#030303] border border-white/10 rounded-xl p-3 text-neutral-300 font-mono text-sm opacity-70">
+                                                    {questions[currentIndex].sampleTestcases[activeTestcaseTab].input}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col h-full gap-4">
+                                        {isRunning ? (
+                                            <div className="flex items-center justify-center flex-1 text-neutral-500 gap-2">
+                                                <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                                <span className="text-sm font-medium tracking-wide text-blue-400">Executing...</span>
+                                            </div>
+                                        ) : runResults ? (
+                                            <div className="flex flex-col h-full gap-4">
+                                                <div className="flex gap-2">
+                                                    {runResults.map((res, i) => {
+                                                        const isAccepted = res.result.status.id === 3;
+                                                        return (
+                                                            <button key={i} onClick={() => setActiveTestcaseTab(i)} className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 ${activeTestcaseTab === i ? "bg-white/10 text-white border border-white/20" : "bg-white/[0.02] text-neutral-400 border border-white/5 hover:bg-white/5"}`}>
+                                                                {isAccepted ? <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(52,211,153,0.6)]"></div> : <div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]"></div>}
+                                                                Case {i + 1}
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
+                                                {runResults[activeTestcaseTab] && (
+                                                    <div className="space-y-4">
+                                                        <div className="text-lg font-bold flex items-center gap-2">
+                                                            {runResults[activeTestcaseTab].result.status.id === 3 ? (
+                                                                <span className="text-emerald-400">Accepted</span>
+                                                            ) : (
+                                                                <span className="text-red-400">{runResults[activeTestcaseTab].result.status.description}</span>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 tracking-widest">Input</div>
+                                                            <pre className="p-3 bg-[#030303] rounded-xl border border-white/5 text-neutral-300 font-mono shadow-inner overflow-x-auto">{runResults[activeTestcaseTab].input}</pre>
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-[10px] uppercase font-bold text-neutral-500 mb-1 tracking-widest">Your Output</div>
+                                                            <pre className="p-3 bg-[#030303] rounded-xl border border-white/5 text-neutral-300 font-mono shadow-inner overflow-x-auto">
+                                                                {(() => {
+                                                                    try { return typeof window !== 'undefined' ? atob(runResults[activeTestcaseTab].result.stdout || '') : runResults[activeTestcaseTab].result.stdout; }
+                                                                    catch (e) { return runResults[activeTestcaseTab].result.stdout; }
+                                                                })()}
+                                                            </pre>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center justify-center flex-1 text-neutral-600 italic">No run results yet.</div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
