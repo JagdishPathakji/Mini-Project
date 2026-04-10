@@ -1,647 +1,815 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
-import { Mic, Radio, AlertCircle, ShieldAlert, LogOut, Send, Bot, User, PlayCircle, PauseCircle } from "lucide-react";
+import { Mic, MicOff, Radio, AlertCircle, ShieldAlert, LogOut, Send, Bot, User, PlayCircle, PauseCircle, Volume2, VolumeX, MessageSquare, Clock, Loader2, XCircle, CheckCircle2, ChevronRight } from "lucide-react";
 import { API_BASE_URL, COMMON_HEADERS } from "../config";
 import Navbar from "./Navbar";
+import toast from "react-hot-toast";
 
 const BACKEND_URL = `${API_BASE_URL}/user/ai/interview`;
 const MAX_VIOLATIONS = 3;
 
+/*  ──────────────────────────────────────────────
+    TURN-BASED STATES
+    IDLE        → waiting to begin
+    AI_THINKING → backend call in-flight
+    AI_SPEAKING → TTS playing AI response
+    USER_TURN   → microphone open, user speaking
+    PROCESSING  → silence detected, preparing to send
+    ENDED       → interview finished
+    ────────────────────────────────────────────── */
+
 export default function InterviewRoom() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { role = "Software Engineer", difficulty = "Medium", jobDescription = "General description" } = location.state || {};
+    const { role, difficulty, jobDescription } = location.state || {};
 
-    const [status, setStatus] = useState("waiting"); // waiting, initializing, speaking, listening, processing, terminated
-    const [messages, setMessages] = useState([]);
-    const [started, setStarted] = useState(false);
-
-    // Proctoring & UI State
+    // ── Core State ───────────────────────────────
+    const [phase, setPhase] = useState("IDLE");          // state machine
+    const [messages, setMessages] = useState([]);         // chat history [{role, content}]
+    const [currentAIText, setCurrentAIText] = useState(""); // live AI text being spoken
+    const [questionCount, setQuestionCount] = useState(0);
+    const [showExitConfirm, setShowExitConfirm] = useState(false);
+    const [isMuted, setIsMuted] = useState(false);
+    const [elapsedTime, setElapsedTime] = useState(0);
     const [violations, setViolations] = useState(0);
-    const [violationLog, setViolationLog] = useState([]);
-    const [warningModal, setWarningModal] = useState(null);
-    const [isFullscreen, setIsFullscreen] = useState(false);
-    const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
-    const [showExitModal, setShowExitModal] = useState(false);
+    const [tabWarningVisible, setTabWarningVisible] = useState(false);
+    const [interviewStarted, setInterviewStarted] = useState(false);
+    const [typingText, setTypingText] = useState("");
 
-    // Speech Refs & State
+    // ── Refs ─────────────────────────────────────
+    const chatEndRef = useRef(null);
+    const timerRef = useRef(null);
+    const silenceTimerRef = useRef(null);
+    const utteranceRef = useRef(null);
+    const lastTranscriptRef = useRef("");
+    const phaseRef = useRef(phase);
+    const isSpeakingRef = useRef(false);
+
+    // ── Speech Recognition ───────────────────────
     const {
         transcript,
-        resetTranscript,
         listening,
-        browserSupportsSpeechRecognition,
-        isMicrophoneAvailable
+        resetTranscript,
+        browserSupportsSpeechRecognition
     } = useSpeechRecognition();
-    
-    // For manual user input and typing mode fallback
-    const [manualInput, setManualInput] = useState("");
-    const [showManual, setShowManual] = useState(false);
 
-    const messagesEndRef = useRef(null);
-    const containerRef = useRef(null);
-    
-    // Smooth scrolling
-    const scrollToBottom = useCallback(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, []);
+    // Keep phaseRef in sync
+    useEffect(() => { phaseRef.current = phase; }, [phase]);
 
+    // ── Redirect if no setup data ────────────────
     useEffect(() => {
-        scrollToBottom();
-    }, [messages, status, transcript, scrollToBottom]);
+        if (!role || !difficulty) {
+            toast.error("Please configure your interview first.");
+            navigate("/ai-interview");
+        }
+    }, [role, difficulty, navigate]);
 
-    const exitInterview = useCallback(() => {
-        speechSynthesis.cancel();
-        SpeechRecognition.stopListening();
-        navigate("/ai-interview");
-    }, [navigate]);
-
-    // ─── PROCTORING LOGIC ───────────────────────────────────────────────────────
-    const recordViolation = useCallback((reason) => {
-        if (status === "terminated" || !started || status === "waiting") return;
-
-        const timestamp = new Date().toLocaleTimeString();
-        setViolations(prev => {
-            const next = prev + 1;
-            setViolationLog(log => [...log, { reason, timestamp, count: next }]);
-
-            if (next >= MAX_VIOLATIONS) {
-                setStatus("terminated");
-                setWarningModal({ reason, count: next, final: true });
-                speechSynthesis.cancel();
-                SpeechRecognition.stopListening();
-            } else {
-                setWarningModal({ reason, count: next, final: false });
-            }
-            return next;
-        });
-    }, [status, started]);
-
+    // ── Timer ────────────────────────────────────
     useEffect(() => {
-        const onFsChange = () => {
-            const inFs = !!document.fullscreenElement;
-            setIsFullscreen(inFs);
-            if (!inFs && status !== "terminated" && started && status !== "waiting") {
-                setShowFullscreenPrompt(true);
-                recordViolation("Exited fullscreen mode");
-            }
-        };
-        document.addEventListener("fullscreenchange", onFsChange);
-        return () => document.removeEventListener("fullscreenchange", onFsChange);
-    }, [status, started, recordViolation]);
+        if (!interviewStarted) return;
+        timerRef.current = setInterval(() => setElapsedTime(p => p + 1), 1000);
+        return () => clearInterval(timerRef.current);
+    }, [interviewStarted]);
 
+    const formatTime = (s) => {
+        const m = Math.floor(s / 60);
+        const sec = s % 60;
+        return `${m < 10 ? '0' + m : m}:${sec < 10 ? '0' + sec : sec}`;
+    };
+
+    // ── Auto-scroll ──────────────────────────────
     useEffect(() => {
-        const handleVisibility = () => {
-            if (document.hidden && status !== "terminated" && started && status !== "waiting") {
-                recordViolation("Switched tab/minimized window");
+        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages, typingText, currentAIText]);
+
+    // ── Tab Monitoring ───────────────────────────
+    useEffect(() => {
+        if (!interviewStarted) return;
+
+        const handleVisibilityChange = () => {
+            if (document.hidden && phaseRef.current !== "ENDED") {
+                setViolations(prev => {
+                    const next = prev + 1;
+                    if (next >= MAX_VIOLATIONS) {
+                        toast.error("Interview terminated due to tab-switching violations.");
+                        endInterview();
+                    } else {
+                        setTabWarningVisible(true);
+                        toast.error(`Warning ${next}/${MAX_VIOLATIONS}: Tab switching detected!`);
+                        setTimeout(() => setTabWarningVisible(false), 4000);
+                    }
+                    return next;
+                });
             }
         };
-        document.addEventListener("visibilitychange", handleVisibility);
-        const handleBlur = () => {
-            if (status !== "terminated" && started && status !== "waiting") {
-                recordViolation("Left the interview window");
-            }
-        };
-        window.addEventListener("blur", handleBlur);
-        return () => {
-            document.removeEventListener("visibilitychange", handleVisibility);
-            window.removeEventListener("blur", handleBlur);
-        };
-    }, [status, started, recordViolation]);
 
-    // ─── INTERVIEW FLOW ENGINE ──────────────────────────────────────────────────
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    }, [interviewStarted]);
 
-    // Synthesis helper
+    // ── TTS Speak Function ───────────────────────
     const speak = useCallback((text) => {
-        if (!text) return;
+        return new Promise((resolve) => {
+            if (isMuted || !text) { resolve(); return; }
 
-        speechSynthesis.cancel();
-        SpeechRecognition.stopListening(); // Force mic OFF while AI speaks
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            utterance.volume = 1;
 
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "en-US";
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
+            // Try to pick a good voice
+            const voices = window.speechSynthesis.getVoices();
+            const preferred = voices.find(v =>
+                v.name.includes("Google") || v.name.includes("Samantha") || v.name.includes("Daniel")
+            ) || voices.find(v => v.lang.startsWith("en")) || voices[0];
+            if (preferred) utterance.voice = preferred;
 
-        utterance.onstart = () => {
-            setStatus("speaking");
-        };
-        
-        utterance.onend = () => {
-            setStatus("listening");
-            resetTranscript();
-            SpeechRecognition.startListening({ continuous: true, language: 'en-US' });
-        };
-        
-        utterance.onerror = (e) => {
-            console.error("SpeechSynthesis error:", e);
-            setStatus("listening");
-            SpeechRecognition.startListening({ continuous: true, language: 'en-US' });
-        };
+            utterance.onend = () => {
+                isSpeakingRef.current = false;
+                resolve();
+            };
+            utterance.onerror = () => {
+                isSpeakingRef.current = false;
+                resolve();
+            };
 
-        speechSynthesis.speak(utterance);
-    }, [resetTranscript]);
+            isSpeakingRef.current = true;
+            utteranceRef.current = utterance;
+            window.speechSynthesis.speak(utterance);
+        });
+    }, [isMuted]);
 
-    // Internal API call abstraction
-    const callAI = useCallback(async (conversationContext) => {
-        setStatus("processing");
-        console.log("Calling Voice AI backend with context payload...");
-        
-        try {
-            const res = await fetch(`${BACKEND_URL}`, {
-                method: "POST",
-                headers: COMMON_HEADERS,
-                body: JSON.stringify({ messages: conversationContext })
-            });
-            const data = await res.json();
-            
-            if (data.status && data.message) {
-                setMessages(prev => [...prev, { role: "assistant", content: data.message }]);
-                speak(data.message);
-            } else {
-                throw new Error(data.message || "Failed to process AI response");
-            }
-        } catch (err) {
-            console.error(err);
-            setStatus("listening");
-            const errorMsg = "I'm having trouble connecting right now. Could you please check your internet and repeat that?";
-            setMessages(prev => [...prev, { role: "assistant", content: errorMsg }]);
-            speak(errorMsg);
-        }
-    }, [speak]);
+    // ── Send to Backend ──────────────────────────
+    const sendToAI = useCallback(async (conversationMessages) => {
+        setPhase("AI_THINKING");
 
-    // Handle initial start explicitly from a user click
-    const handleStartInterview = () => {
-        // Unlock browser audio context explicitly via user interaction
-        speechSynthesis.cancel(); 
-        
-        // Enter fullscreen optionally but let's encourage it
-        const el = document.documentElement;
-        if (el.requestFullscreen) {
-            el.requestFullscreen().catch(err => console.log("Fullscreen blocked implicitly, continuing anyway", err));
-        }
+        const systemPrompt = `You are a world-class technical interviewer at a top tech company. You are conducting a ${difficulty} difficulty technical interview for the role of ${role}.
 
-        setStarted(true);
-        setStatus("initializing");
+${jobDescription ? `Job Description Context:\n${jobDescription}\n` : ""}
 
-        const systemPrompt = `You are an expert technical interviewer called NEXA for a ${role} position. The difficulty level is ${difficulty}. Job Description: ${jobDescription}. 
-Rules:
-1. Speak completely naturally like a human interviewer.
-2. Ask ONE verbal question at a time. Do NOT provide multiple questions.
-3. Wait for the candidate to answer before moving on.
-4. Keep your responses concise and precise. Avoid unnecessary fluff.
-5. NEVER use markdown formats, asterisks, or code blocks as this will be read aloud through speech synthesis.
-6. The user is now joining the interview. Acknowledge them, verify they are ready, and ask the very first question.`;
+RULES:
+1. Ask ONE question at a time. Wait for the candidate's answer before proceeding.
+2. After the candidate answers, briefly evaluate their response (good points, areas to improve) then ask the NEXT question.
+3. Keep your responses concise and conversational — you are speaking aloud, not writing an essay.
+4. Vary question types: conceptual, scenario-based, system design, coding logic, behavioral.
+5. Adapt difficulty based on the candidate's performance.
+6. Be encouraging but honest. If an answer is incomplete, probe deeper.
+7. Do NOT use markdown formatting, bullet points, or code blocks — speak naturally as a human interviewer would.
+8. Start each response with a brief reaction to their answer before moving on.
+9. After about 8-10 questions, wrap up the interview with feedback.`;
 
-        const initMessages = [
+        const apiMessages = [
             { role: "system", content: systemPrompt },
-            { role: "user", content: "Hi, I have joined the interview room. Let's begin the interview!" }
+            ...conversationMessages
         ];
 
-        setMessages(initMessages);
-        callAI(initMessages);
-    };
+        try {
+            const res = await fetch(BACKEND_URL, {
+                method: "POST",
+                headers: COMMON_HEADERS,
+                body: JSON.stringify({ messages: apiMessages })
+            });
 
-    // Handle user submitting answer manually
-    const submitUserResponse = useCallback((content) => {
-        if (!content || !content.trim()) return;
-        
-        SpeechRecognition.stopListening();
-        resetTranscript();
-        
-        const finalContent = content.trim();
-        const userMsg = { role: "user", content: finalContent };
-        
-        setMessages(prev => {
-            const updated = [...prev, userMsg];
-            callAI(updated);
-            return updated;
-        });
-        
-        setManualInput("");
-        setShowManual(false);
-    }, [callAI, resetTranscript]);
+            const data = await res.json();
 
-    const handleMicSendClick = () => {
-        if (transcript.trim()) {
-            submitUserResponse(transcript);
+            if (!data.status) {
+                throw new Error(data.message || "AI request failed");
+            }
+
+            const aiText = data.message;
+            const aiMessage = { role: "assistant", content: aiText };
+            setMessages(prev => [...prev, aiMessage]);
+            setQuestionCount(prev => prev + 1);
+
+            // Speak the response
+            setPhase("AI_SPEAKING");
+            setCurrentAIText(aiText);
+            await speak(aiText);
+            setCurrentAIText("");
+
+            // Check if interview is wrapping up
+            if (questionCount >= 9 || aiText.toLowerCase().includes("that concludes") || aiText.toLowerCase().includes("end of the interview")) {
+                setPhase("ENDED");
+                clearInterval(timerRef.current);
+                toast.success("Interview completed!");
+                return;
+            }
+
+            // Now user's turn
+            setPhase("USER_TURN");
+
+        } catch (err) {
+            console.error("AI Error:", err);
+            toast.error(err.message || "Failed to connect to AI");
+            setPhase("USER_TURN"); // Let user retry
         }
-    };
+    }, [difficulty, role, jobDescription, speak, questionCount]);
 
-    // ─── RENDER HELPERS ─────────────────────────────────────────────────────────
-    const phaseLabel = status === "speaking" ? "AI Speaking" :
-                       status === "processing" ? "AI Thinking" :
-                       status === "initializing" ? "Connecting to AI..." :
-                       status === "waiting" ? "Awaiting Start" :
-                       (listening ? "Your Turn (Listening)" : "Ready to Input");
+    // ── Start Interview ──────────────────────────
+    const startInterview = useCallback(async () => {
+        setInterviewStarted(true);
 
-    const phaseColorClass = status === "speaking" ? "text-amber-400" :
-                            status === "processing" ? "text-blue-400" :
-                            "text-emerald-400";
-                            
-    const phaseBgClass = status === "speaking" ? "bg-amber-400 shadow-[0_0_10px_#fbbf24]" :
-                         status === "processing" ? "bg-blue-400 shadow-[0_0_10px_#60a5fa]" :
-                         "bg-emerald-400 shadow-[0_0_10px_#34d399]";
+        const greeting = `Hello! Welcome to your ${difficulty} level ${role} interview. I'm your AI interviewer today. Let's begin — I'll ask you a series of technical questions. Take your time, think through each answer, and speak clearly. Let's start with the first question.`;
 
-    const enterFullscreen = () => {
-        const el = document.documentElement;
-        if (el.requestFullscreen) el.requestFullscreen();
-        setShowFullscreenPrompt(false);
-    };
+        const greetMsg = { role: "assistant", content: greeting };
+        setMessages([greetMsg]);
 
-    // ─── TERMINATED VIEW ───────────────────────────────────────────────────────
-    if (status === "terminated") {
+        setPhase("AI_SPEAKING");
+        setCurrentAIText(greeting);
+        await speak(greeting);
+        setCurrentAIText("");
+
+        // Send initial prompt to get first question
+        const firstPrompt = [
+            greetMsg,
+            { role: "user", content: "I'm ready. Please ask me the first question." }
+        ];
+        setMessages(prev => [...prev, { role: "user", content: "I'm ready. Please ask me the first question." }]);
+        await sendToAI(firstPrompt);
+    }, [difficulty, role, speak, sendToAI]);
+
+    // ── Silence Detection ────────────────────────
+    useEffect(() => {
+        if (phase !== "USER_TURN" || !listening) return;
+
+        // When transcript changes, reset silence timer
+        if (transcript !== lastTranscriptRef.current) {
+            lastTranscriptRef.current = transcript;
+            clearTimeout(silenceTimerRef.current);
+
+            // Set a 2.5 second silence timeout
+            silenceTimerRef.current = setTimeout(() => {
+                if (phaseRef.current === "USER_TURN" && transcript.trim().length > 0) {
+                    handleUserDoneSpeaking();
+                }
+            }, 2500);
+        }
+    }, [transcript, phase, listening]);
+
+    // ── Handle user finishing speaking ────────────
+    const handleUserDoneSpeaking = useCallback(() => {
+        SpeechRecognition.stopListening();
+        clearTimeout(silenceTimerRef.current);
+
+        const userText = transcript.trim();
+        if (!userText) {
+            setPhase("USER_TURN");
+            return;
+        }
+
+        const userMsg = { role: "user", content: userText };
+        setMessages(prev => [...prev, userMsg]);
+        resetTranscript();
+        lastTranscriptRef.current = "";
+
+        // Send full conversation to AI
+        setMessages(prev => {
+            sendToAI(prev);
+            return prev;
+        });
+    }, [transcript, resetTranscript, sendToAI]);
+
+    // ── Start Listening when USER_TURN ───────────
+    useEffect(() => {
+        if (phase === "USER_TURN" && !listening && !isSpeakingRef.current) {
+            resetTranscript();
+            lastTranscriptRef.current = "";
+            SpeechRecognition.startListening({ continuous: true, language: "en-US" });
+        }
+    }, [phase, listening, resetTranscript]);
+
+    // ── Stop everything on unmount ───────────────
+    useEffect(() => {
+        return () => {
+            SpeechRecognition.stopListening();
+            window.speechSynthesis.cancel();
+            clearInterval(timerRef.current);
+            clearTimeout(silenceTimerRef.current);
+        };
+    }, []);
+
+    // ── Manual Send (button or Enter key) ────────
+    const handleManualSend = useCallback(() => {
+        if (phase !== "USER_TURN") return;
+        if (!transcript.trim()) {
+            toast.error("Please speak your answer first.");
+            return;
+        }
+        handleUserDoneSpeaking();
+    }, [phase, transcript, handleUserDoneSpeaking]);
+
+    // ── End Interview ────────────────────────────
+    const endInterview = useCallback(() => {
+        setPhase("ENDED");
+        SpeechRecognition.stopListening();
+        window.speechSynthesis.cancel();
+        clearInterval(timerRef.current);
+        clearTimeout(silenceTimerRef.current);
+        setShowExitConfirm(false);
+    }, []);
+
+    // ── Toggle Mute ──────────────────────────────
+    const toggleMute = useCallback(() => {
+        if (!isMuted) {
+            window.speechSynthesis.cancel();
+        }
+        setIsMuted(prev => !prev);
+    }, [isMuted]);
+
+    // ── Skip AI Speaking ─────────────────────────
+    const skipSpeaking = useCallback(() => {
+        window.speechSynthesis.cancel();
+        isSpeakingRef.current = false;
+        setCurrentAIText("");
+        if (phaseRef.current === "AI_SPEAKING") {
+            setPhase("USER_TURN");
+        }
+    }, []);
+
+    // ── Browser Support Check ────────────────────
+    if (!browserSupportsSpeechRecognition) {
         return (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/95 backdrop-blur-xl text-white">
-                <div className="text-center max-w-md w-full animate-in fade-in slide-in-from-bottom-8 duration-700">
-                    <div className="w-24 h-24 bg-red-600/10 border border-red-500/20 rounded-full flex items-center justify-center mx-auto mb-8 shadow-[0_0_60px_-15px_rgba(239,68,68,0.5)]">
-                        <AlertCircle size={48} className="text-red-500" />
-                    </div>
-                    <h2 className="text-4xl font-extrabold mb-4">Session Terminated</h2>
-                    <p className="text-neutral-400 mb-6 font-mono text-sm leading-relaxed bg-red-500/5 p-4 rounded-xl border border-red-500/10 text-left w-full mx-auto">
-                        Strike {violations}: {warningModal?.reason}
-                    </p>
-                    <button onClick={exitInterview} className="px-8 py-4 rounded-xl bg-white text-black font-bold hover:bg-neutral-200 transition-all shadow-2xl">
-                        Return to Dashboard
+            <div className="h-screen bg-[#030303] flex flex-col items-center justify-center text-white gap-6">
+                <Navbar />
+                <div className="mt-20 flex flex-col items-center gap-4 p-8 bg-red-500/10 border border-red-500/20 rounded-3xl max-w-md text-center">
+                    <XCircle size={48} className="text-red-400" />
+                    <h2 className="text-2xl font-bold">Browser Not Supported</h2>
+                    <p className="text-neutral-400 text-sm">Your browser does not support speech recognition. Please use Chrome or Edge for the best experience.</p>
+                    <button onClick={() => navigate("/ai-interview")} className="mt-4 px-6 py-3 bg-white text-black rounded-xl font-bold text-sm hover:bg-neutral-200 transition-all">
+                        Go Back
                     </button>
                 </div>
             </div>
         );
     }
 
-    // Filter out system prompt & initial trigger message so the user only sees real messages
-    const displayMessages = messages.filter((m, i) => {
-        if (m.role === "system") return false;
-        if (i === 1 && m.role === "user" && m.content.includes("joined the interview room")) return false;
-        return true;
-    });
+    // ── Phase Indicator Helpers ───────────────────
+    const getPhaseLabel = () => {
+        switch (phase) {
+            case "IDLE": return "Ready to Begin";
+            case "AI_THINKING": return "AI is Thinking...";
+            case "AI_SPEAKING": return "AI is Speaking...";
+            case "USER_TURN": return "Your Turn — Speak Now";
+            case "PROCESSING": return "Processing...";
+            case "ENDED": return "Interview Complete";
+            default: return "";
+        }
+    };
 
+    const getPhaseColor = () => {
+        switch (phase) {
+            case "IDLE": return "text-neutral-400";
+            case "AI_THINKING": return "text-amber-400";
+            case "AI_SPEAKING": return "text-blue-400";
+            case "USER_TURN": return "text-emerald-400";
+            case "PROCESSING": return "text-purple-400";
+            case "ENDED": return "text-white";
+            default: return "text-neutral-400";
+        }
+    };
+
+    const getPhaseGlow = () => {
+        switch (phase) {
+            case "AI_THINKING": return "shadow-[0_0_40px_-10px_rgba(245,158,11,0.3)]";
+            case "AI_SPEAKING": return "shadow-[0_0_40px_-10px_rgba(59,130,246,0.3)]";
+            case "USER_TURN": return "shadow-[0_0_40px_-10px_rgba(52,211,153,0.3)]";
+            default: return "";
+        }
+    };
+
+    // ──────────────────────────────────────────────
+    // RENDER
+    // ──────────────────────────────────────────────
     return (
-        <div 
-            ref={containerRef} 
-            className="min-h-screen bg-[#030303] text-white font-sans selection:bg-white selection:text-black relative overflow-hidden"
-            onContextMenu={e => e.preventDefault()}
-        >
+        <div className="h-screen bg-[#030303] text-white flex flex-col overflow-hidden relative selection:bg-white selection:text-black">
             <Navbar />
 
-            {/* Ambient Animated Background Gradients */}
-            <div className="absolute top-[10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/10 blur-[130px] pointer-events-none" />
-            <div className="absolute bottom-[0%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-600/10 blur-[130px] pointer-events-none" />
+            {/* Ambient Background */}
+            <div className="absolute top-[10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-600/5 blur-[120px] pointer-events-none" />
+            <div className="absolute bottom-[0%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-600/5 blur-[120px] pointer-events-none" />
+            <div className="absolute top-[50%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[30%] h-[30%] rounded-full bg-emerald-600/[0.03] blur-[150px] pointer-events-none" />
 
-            {/* If NOT Started, obscure the main room with a clean Waiting state overlay */}
-            {!started && (
-                <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-md pt-16">
-                    <div className="bg-[#0a0a0a] border border-white/10 rounded-[2rem] p-8 max-w-lg w-full text-center shadow-2xl animate-in zoom-in-95 duration-500 relative overflow-hidden">
-                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent pointer-events-none"></div>
-                        <div className="relative z-10">
-                            <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_-5px_rgba(52,211,153,0.3)]">
-                                <Bot size={36} className="text-emerald-400" />
-                            </div>
-                            <h2 className="text-3xl font-extrabold mb-3">Ready to Begin?</h2>
-                            <p className="text-neutral-400 text-sm mb-8 leading-relaxed">
-                                You are about to join a proctored AI interview for the <strong className="text-white">{role}</strong> role. Ensure you are in a quiet environment and your microphone works.
-                            </p>
-                            
-                            <button 
-                                onClick={handleStartInterview} 
-                                className="w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black text-sm font-bold transition-all shadow-[0_0_20px_rgba(52,211,153,0.4)] hover:scale-[1.02]"
-                            >
-                                Start Interview Now
-                            </button>
-                            <button 
-                                onClick={() => navigate("/ai-interview")} 
-                                className="w-full py-4 rounded-xl text-neutral-400 hover:text-white text-sm font-bold mt-2 transition-all hover:bg-white/5"
-                            >
-                                Cancel & Return Setup
-                            </button>
-                        </div>
+            {/* Tab Violation Warning Banner */}
+            {tabWarningVisible && (
+                <div className="fixed top-16 left-0 right-0 z-[100] flex justify-center animate-in slide-in-from-top-2">
+                    <div className="mx-4 px-6 py-3 bg-red-500/20 border border-red-500/30 rounded-2xl backdrop-blur-xl flex items-center gap-3 shadow-[0_0_40px_-10px_rgba(239,68,68,0.3)]">
+                        <ShieldAlert size={20} className="text-red-400 animate-pulse" />
+                        <span className="text-red-300 text-sm font-bold">Tab switching detected! Warning {violations}/{MAX_VIOLATIONS}</span>
                     </div>
                 </div>
             )}
 
-            <main className="pt-24 pb-12 max-w-7xl mx-auto px-6 relative z-10 flex flex-col h-screen">
-                
-                {/* Header */}
-                <div className="flex items-center justify-between mb-8 flex-shrink-0">
-                    <div>
-                        <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-br from-white to-neutral-500 bg-clip-text text-transparent">Interview Room</h1>
-                        <p className="text-neutral-400 text-sm mt-1 flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                            Live AI-powered Assessment
-                        </p>
-                    </div>
-                    <button 
-                        onClick={() => setShowExitModal(true)}
-                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 text-sm font-bold transition-all shadow-[0_0_20px_-5px_rgba(239,68,68,0.2)]"
-                    >
-                        <LogOut size={16} />
-                        Exit Session
-                    </button>
-                </div>
+            {/* Main Content */}
+            <div className="flex flex-1 pt-20 pb-6 px-4 md:px-6 gap-4 overflow-hidden relative z-10">
 
-                <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0 bg-[#0a0a0a] rounded-[2rem] border border-white/10 shadow-2xl p-6 relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
-                    
-                    {/* LEFT COLUMN: Sidebar Info & AI Sphere */}
-                    <div className="lg:w-1/3 flex flex-col gap-6 relative z-10 min-h-0">
-                        {/* Meta Info */}
-                        <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col gap-3">
-                            <div className="flex justify-between items-center pb-3 border-b border-white/10">
-                                <span className="text-xs uppercase tracking-widest font-bold text-neutral-500">Target Role</span>
-                                <span className="text-sm font-medium text-white max-w-[60%] truncate text-right">{role}</span>
+                {/* LEFT PANEL — Chat Transcript */}
+                <div className="flex-1 flex flex-col bg-[#0a0a0a] border border-white/10 rounded-3xl overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.4)] relative">
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none z-0" />
+
+                    {/* Chat Header */}
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#0a0a0a] relative z-10">
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                                <MessageSquare size={16} className="text-blue-400" />
+                                <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-400">Interview Transcript</span>
                             </div>
-                            <div className="flex justify-between items-center pb-3 border-b border-white/10">
-                                <span className="text-xs uppercase tracking-widest font-bold text-neutral-500">Difficulty</span>
-                                <span className="text-xs px-2.5 py-1 rounded-md font-bold uppercase tracking-widest bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                    {difficulty}
-                                </span>
-                            </div>
-                            <div className="flex justify-between items-center pb-3 border-b border-white/10">
-                                <span className="text-xs uppercase tracking-widest font-bold text-neutral-500">Violations</span>
-                                <span className={`text-sm font-bold ${violations > 0 ? "text-orange-400" : "text-white"}`}>
-                                    {violations} <span className="text-neutral-500 text-[10px]">/ 3</span>
-                                </span>
-                            </div>
-                            <div className="flex flex-col gap-3 pt-1">
-                                <span className="text-[10px] uppercase tracking-widest font-bold flex items-center gap-2 text-neutral-500">
-                                    <ShieldAlert size={12} /> Proctor Logs
-                                </span>
-                                <div className="h-28 overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-white/10 pr-2">
-                                    {violationLog.length === 0 ? (
-                                        <p className="text-xs italic text-neutral-600">No violations detected</p>
-                                    ) : (
-                                        violationLog.map((v, i) => (
-                                            <div key={i} className="text-[11px] font-mono p-2 bg-red-500/10 border border-red-500/20 rounded-lg text-red-300">
-                                                {v.reason}
-                                            </div>
-                                        ))
+                            {interviewStarted && (
+                                <div className="flex items-center gap-2 ml-4">
+                                    <div className={`w-2 h-2 rounded-full ${phase === "ENDED" ? "bg-neutral-500" : "bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]"}`} />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
+                                        {phase === "ENDED" ? "Session Ended" : "Live"}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            {/* Timer */}
+                            {interviewStarted && (
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10">
+                                    <Clock size={14} className="text-neutral-400" />
+                                    <span className="text-sm font-mono font-bold text-neutral-300">{formatTime(elapsedTime)}</span>
+                                </div>
+                            )}
+
+                            {/* Question Counter */}
+                            {questionCount > 0 && (
+                                <div className="px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400">Q{questionCount}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Messages */}
+                    <div className="flex-1 overflow-y-auto p-6 space-y-5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent relative z-10">
+                        {!interviewStarted && (
+                            <div className="flex flex-col items-center justify-center h-full gap-8 text-center">
+                                <div className="relative">
+                                    <div className="w-24 h-24 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-[0_0_40px_-10px_rgba(255,255,255,0.1)]">
+                                        <Bot size={40} className="text-neutral-400" />
+                                    </div>
+                                    <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+                                        <Mic size={14} className="text-emerald-400" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-extrabold tracking-tight mb-3 bg-gradient-to-b from-white to-neutral-400 bg-clip-text text-transparent">
+                                        AI Interview Session
+                                    </h2>
+                                    <p className="text-neutral-500 text-sm max-w-sm mx-auto leading-relaxed">
+                                        Role: <span className="text-white font-semibold">{role}</span> · 
+                                        Difficulty: <span className="text-white font-semibold">{difficulty}</span>
+                                    </p>
+                                    {jobDescription && (
+                                        <p className="text-neutral-600 text-xs mt-2 max-w-sm mx-auto">Job description provided ✓</p>
                                     )}
                                 </div>
+                                <button
+                                    onClick={startInterview}
+                                    className="px-8 py-4 bg-white text-black rounded-2xl font-bold text-sm flex items-center gap-3 group hover:bg-neutral-200 transition-all shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.5)] hover:-translate-y-1"
+                                >
+                                    <PlayCircle size={20} className="group-hover:scale-110 transition-transform" />
+                                    Start Interview
+                                    <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                                </button>
                             </div>
-                        </div>
+                        )}
 
-                        {/* AI Core Visualization */}
-                        <div className="bg-[#030303] border border-white/10 rounded-2xl flex-1 min-h-[250px] flex flex-col items-center justify-center relative overflow-hidden">
-                            <span className="absolute top-4 left-4 text-[10px] uppercase tracking-widest font-bold text-neutral-500 flex items-center gap-2">
-                                <Bot size={14} /> AI Interviewer
-                            </span>
+                        {messages.map((msg, index) => (
+                            <div
+                                key={index}
+                                className={`flex w-full ${msg.role === "user" ? "justify-end" : "justify-start"} animate-in slide-in-from-bottom-2 duration-300`}
+                            >
+                                {msg.role === "assistant" && (
+                                    <div className="mr-3 flex-shrink-0 mt-1">
+                                        <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shadow-[0_0_15px_-5px_rgba(59,130,246,0.4)]">
+                                            <Bot size={16} className="text-blue-400" />
+                                        </div>
+                                    </div>
+                                )}
 
-                            <div className="relative mt-4">
-                                {status === "speaking" ? (
-                                    <>
-                                        <div className="absolute inset-0 bg-emerald-500 rounded-full blur-[40px] opacity-40 animate-pulse mix-blend-screen scale-150"></div>
-                                        <div className="absolute inset-0 bg-blue-500 rounded-full blur-[30px] opacity-30 animate-[spin_4s_linear_infinite] mix-blend-screen scale-[1.2]"></div>
-                                        <div className="w-28 h-28 bg-gradient-to-br from-emerald-300 via-white to-emerald-100 rounded-full shadow-[0_0_60px_#34d399] animate-[pulse_1s_ease-in-out_infinite] border-4 border-white/40 flex items-center justify-center relative z-10 transition-all duration-300 delay-100">
-                                            <div className="w-20 h-20 bg-white/50 rounded-full animate-ping opacity-50"></div>
+                                <div
+                                    className={`max-w-[80%] rounded-2xl px-5 py-4 text-sm leading-relaxed ${msg.role === "user"
+                                        ? "bg-white/10 border border-white/10 text-white rounded-br-none shadow-[0_5px_20px_-5px_rgba(255,255,255,0.05)]"
+                                        : "bg-blue-500/5 border border-blue-500/20 text-neutral-300 rounded-bl-none shadow-[0_5px_20px_-5px_rgba(59,130,246,0.05)]"
+                                        }`}
+                                >
+                                    {msg.content}
+                                </div>
+
+                                {msg.role === "user" && (
+                                    <div className="ml-3 flex-shrink-0 mt-1">
+                                        <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 flex items-center justify-center shadow-inner">
+                                            <User size={16} className="text-white" />
                                         </div>
-                                    </>
-                                ) : status === "processing" ? (
-                                    <>
-                                        <div className="absolute inset-0 bg-blue-500 rounded-full blur-[40px] opacity-30 animate-pulse mix-blend-screen scale-150"></div>
-                                        <div className="w-28 h-28 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-full shadow-[0_0_40px_#60a5fa] animate-pulse border-4 border-blue-400/50 flex items-center justify-center relative z-10 transition-all duration-300 delay-100">
-                                        </div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div className="absolute inset-0 bg-neutral-600 rounded-full blur-[30px] opacity-20 scale-125"></div>
-                                        <div className="w-28 h-28 bg-gradient-to-br from-neutral-700 to-neutral-900 rounded-full border border-white/10 flex items-center justify-center relative z-10 transition-all duration-700">
-                                            <div className={`w-10 h-10 rounded-full blur-md ${listening ? 'bg-emerald-500/30 animate-pulse' : 'bg-neutral-600'}`}></div>
-                                        </div>
-                                    </>
+                                    </div>
                                 )}
                             </div>
+                        ))}
 
-                            <p className={`mt-8 font-bold uppercase tracking-[0.2em] text-xs transition-colors duration-500 flex flex-col items-center gap-2 ${phaseColorClass}`}>
-                                <span className={`w-2 h-2 rounded-full ${phaseBgClass} animate-pulse`} />
-                                {phaseLabel}
-                            </p>
+                        {/* Live AI Typing/Speaking Indicator */}
+                        {currentAIText && phase === "AI_SPEAKING" && (
+                            <div className="flex w-full justify-start animate-in slide-in-from-bottom-2">
+                                <div className="mr-3 flex-shrink-0 mt-1">
+                                    <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shadow-[0_0_15px_-5px_rgba(59,130,246,0.4)] animate-pulse">
+                                        <Volume2 size={16} className="text-blue-400" />
+                                    </div>
+                                </div>
+                                <div className="max-w-[80%] rounded-2xl rounded-bl-none px-5 py-4 text-sm leading-relaxed bg-blue-500/5 border border-blue-500/20 text-neutral-300 shadow-[0_0_20px_-5px_rgba(59,130,246,0.1)]">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="flex gap-1">
+                                            <div className="w-1 h-3 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: "0ms" }} />
+                                            <div className="w-1 h-4 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: "150ms" }} />
+                                            <div className="w-1 h-2 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: "300ms" }} />
+                                            <div className="w-1 h-5 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: "450ms" }} />
+                                        </div>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400/60">Speaking</span>
+                                    </div>
+                                    {currentAIText}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* AI Thinking Indicator */}
+                        {phase === "AI_THINKING" && (
+                            <div className="flex w-full justify-start animate-in slide-in-from-bottom-2">
+                                <div className="mr-3 flex-shrink-0 mt-1">
+                                    <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center shadow-[0_0_15px_-5px_rgba(245,158,11,0.4)]">
+                                        <Bot size={16} className="text-amber-400 animate-pulse" />
+                                    </div>
+                                </div>
+                                <div className="rounded-2xl rounded-bl-none px-6 py-4 bg-amber-500/5 border border-amber-500/20 flex items-center gap-3 shadow-inner">
+                                    <Loader2 size={16} className="text-amber-400 animate-spin" />
+                                    <span className="text-xs font-bold uppercase tracking-widest text-amber-400/80">Thinking...</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Live Transcript (what user is saying) */}
+                        {phase === "USER_TURN" && transcript && (
+                            <div className="flex w-full justify-end animate-in slide-in-from-bottom-2">
+                                <div className="max-w-[80%] rounded-2xl rounded-br-none px-5 py-4 text-sm leading-relaxed bg-white/5 border border-white/10 border-dashed text-neutral-400 italic">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400/60 not-italic">Listening...</span>
+                                    </div>
+                                    {transcript}
+                                </div>
+                                <div className="ml-3 flex-shrink-0 mt-1">
+                                    <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shadow-[0_0_15px_-5px_rgba(52,211,153,0.4)]">
+                                        <Mic size={16} className="text-emerald-400 animate-pulse" />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Interview Ended Summary */}
+                        {phase === "ENDED" && (
+                            <div className="flex flex-col items-center gap-6 py-8 animate-in slide-in-from-bottom-4 duration-500">
+                                <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shadow-[0_0_30px_-5px_rgba(52,211,153,0.2)]">
+                                    <CheckCircle2 size={32} className="text-emerald-400" />
+                                </div>
+                                <div className="text-center">
+                                    <h3 className="text-xl font-extrabold text-white mb-2">Interview Complete</h3>
+                                    <p className="text-neutral-400 text-sm">Duration: {formatTime(elapsedTime)} · Questions: {questionCount}</p>
+                                </div>
+                                <button
+                                    onClick={() => navigate("/ai-interview")}
+                                    className="px-6 py-3 bg-white text-black rounded-xl font-bold text-sm hover:bg-neutral-200 transition-all shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)] flex items-center gap-2"
+                                >
+                                    <ChevronRight size={16} />
+                                    Start New Interview
+                                </button>
+                            </div>
+                        )}
+
+                        <div ref={chatEndRef} />
+                    </div>
+                </div>
+
+                {/* RIGHT PANEL — Controls */}
+                <div className="w-80 flex-shrink-0 flex flex-col gap-4">
+
+                    {/* Status Card */}
+                    <div className={`bg-[#0a0a0a] border border-white/10 rounded-3xl p-6 relative overflow-hidden ${getPhaseGlow()}`}>
+                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
+
+                        <div className="relative z-10">
+                            <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-4">Interview Status</div>
+
+                            <div className={`text-lg font-bold mb-4 ${getPhaseColor()}`}>
+                                {getPhaseLabel()}
+                            </div>
+
+                            {/* Microphone Visualizer */}
+                            {phase === "USER_TURN" && (
+                                <div className="flex items-center justify-center gap-1 h-12 mb-4">
+                                    {[...Array(12)].map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className="w-1 bg-emerald-400 rounded-full animate-pulse"
+                                            style={{
+                                                height: `${Math.random() * 100}%`,
+                                                animationDelay: `${i * 80}ms`,
+                                                animationDuration: `${600 + Math.random() * 400}ms`
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* AI Thinking Animation */}
+                            {phase === "AI_THINKING" && (
+                                <div className="flex items-center justify-center h-12 mb-4">
+                                    <div className="relative w-12 h-12">
+                                        <div className="absolute inset-0 rounded-full border-2 border-amber-500/20" />
+                                        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-amber-400 animate-spin" />
+                                        <div className="absolute inset-2 rounded-full border-2 border-transparent border-b-amber-400/50 animate-[spin_1.5s_linear_infinite_reverse]" />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* AI Speaking Animation */}
+                            {phase === "AI_SPEAKING" && (
+                                <div className="flex items-center justify-center gap-1.5 h-12 mb-4">
+                                    {[...Array(8)].map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className="w-1.5 bg-blue-400 rounded-full"
+                                            style={{
+                                                animation: "soundWave 0.8s ease-in-out infinite alternate",
+                                                animationDelay: `${i * 100}ms`,
+                                                height: "4px"
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Interview Config Info */}
+                            <div className="space-y-3 pt-4 border-t border-white/5">
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Role</span>
+                                    <span className="text-xs font-semibold text-neutral-300">{role}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Difficulty</span>
+                                    <span className={`text-xs font-bold px-2 py-0.5 rounded-lg ${
+                                        difficulty === "Easy" ? "bg-emerald-400/10 text-emerald-400 border border-emerald-400/20" :
+                                        difficulty === "Medium" ? "bg-amber-400/10 text-amber-400 border border-amber-400/20" :
+                                        "bg-red-400/10 text-red-400 border border-red-400/20"
+                                    }`}>
+                                        {difficulty}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Violations</span>
+                                    <span className={`text-xs font-bold ${violations > 0 ? "text-red-400" : "text-neutral-500"}`}>
+                                        {violations}/{MAX_VIOLATIONS}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* RIGHT COLUMN: Chat Log & Input */}
-                    <div className="flex-1 flex flex-col relative z-10 h-full bg-[#030303] border border-white/10 rounded-2xl overflow-hidden shadow-inner">
-                        {/* Status Bar */}
-                        <div className="px-5 py-3 border-b border-white/10 bg-white/[0.02] flex items-center justify-between shadow-sm z-20 shrink-0">
-                            <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-2">
-                                <Radio size={14} className="text-emerald-400" /> Live Transcript
-                            </span>
-                            <div className="flex items-center gap-2 text-[10px] uppercase font-bold tracking-wider text-neutral-500">
-                                Mic Access: <span className={!browserSupportsSpeechRecognition ? "text-red-400" : isMicrophoneAvailable ? "text-emerald-400" : "text-amber-400"}>
-                                    {!browserSupportsSpeechRecognition ? "N/A" : isMicrophoneAvailable ? "Active" : "Denied"}
+                    {/* Control Buttons */}
+                    {interviewStarted && phase !== "ENDED" && (
+                        <div className="bg-[#0a0a0a] border border-white/10 rounded-3xl p-6 space-y-3 relative overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
+
+                            <div className="relative z-10 space-y-3">
+                                <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 mb-4">Controls</div>
+
+                                {/* Manual Send Button */}
+                                {phase === "USER_TURN" && (
+                                    <button
+                                        onClick={handleManualSend}
+                                        disabled={!transcript.trim()}
+                                        className="w-full py-3 rounded-xl bg-white text-black font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-neutral-200 transition-all shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)] disabled:opacity-30 disabled:cursor-not-allowed"
+                                    >
+                                        <Send size={14} />
+                                        Send Answer
+                                    </button>
+                                )}
+
+                                {/* Skip AI Speaking */}
+                                {phase === "AI_SPEAKING" && (
+                                    <button
+                                        onClick={skipSpeaking}
+                                        className="w-full py-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-500/20 transition-all"
+                                    >
+                                        <PauseCircle size={14} />
+                                        Skip Speaking
+                                    </button>
+                                )}
+
+                                {/* Mute/Unmute */}
+                                <button
+                                    onClick={toggleMute}
+                                    className={`w-full py-3 rounded-xl border font-bold text-xs uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
+                                        isMuted
+                                            ? "bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20"
+                                            : "bg-white/5 border-white/10 text-neutral-300 hover:bg-white/10 hover:text-white"
+                                    }`}
+                                >
+                                    {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                                    {isMuted ? "Unmute AI" : "Mute AI Voice"}
+                                </button>
+
+                                {/* End Interview */}
+                                <button
+                                    onClick={() => setShowExitConfirm(true)}
+                                    className="w-full py-3 rounded-xl border border-red-500/20 bg-red-500/5 text-red-500 font-bold text-[10px] uppercase tracking-widest hover:bg-red-500/10 transition-all flex items-center justify-center gap-2"
+                                >
+                                    <LogOut size={14} />
+                                    End Interview
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Mic Status Indicator */}
+                    {interviewStarted && phase !== "ENDED" && (
+                        <div className="bg-[#0a0a0a] border border-white/10 rounded-3xl p-6 relative overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent pointer-events-none" />
+
+                            <div className="relative z-10 flex flex-col items-center gap-4">
+                                <div className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Microphone</div>
+
+                                <div className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-500 ${
+                                    phase === "USER_TURN" && listening
+                                        ? "bg-emerald-500/20 border-2 border-emerald-500/40 shadow-[0_0_30px_-5px_rgba(52,211,153,0.4)]"
+                                        : "bg-white/5 border-2 border-white/10"
+                                }`}>
+                                    {phase === "USER_TURN" && listening && (
+                                        <>
+                                            <div className="absolute inset-0 rounded-full border-2 border-emerald-400/30 animate-ping" />
+                                            <div className="absolute -inset-2 rounded-full border border-emerald-400/10 animate-pulse" />
+                                        </>
+                                    )}
+                                    {phase === "USER_TURN" && listening
+                                        ? <Mic size={24} className="text-emerald-400 relative z-10" />
+                                        : <MicOff size={24} className="text-neutral-500 relative z-10" />
+                                    }
+                                </div>
+
+                                <span className={`text-[10px] font-bold uppercase tracking-widest ${
+                                    phase === "USER_TURN" && listening ? "text-emerald-400" : "text-neutral-500"
+                                }`}>
+                                    {phase === "USER_TURN" && listening ? "Active — Speak Now" : "Standby"}
                                 </span>
                             </div>
                         </div>
-
-                        {/* Chat History */}
-                        <div className="flex-1 p-6 overflow-y-auto space-y-6 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-                            {displayMessages.length === 0 && status === "initializing" && (
-                                <div className="h-full flex flex-col items-center justify-center text-neutral-500 opacity-60">
-                                    <div className="w-12 h-12 border-2 border-white/20 border-t-white rounded-full animate-spin mb-4" />
-                                    Starting interview securely...
-                                </div>
-                            )}
-
-                            {displayMessages.map((msg, i) => (
-                                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                    <div className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                                        <div className="mt-1 flex-shrink-0">
-                                            {msg.role === 'user' ? (
-                                                <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400">
-                                                    <User size={14} />
-                                                </div>
-                                            ) : (
-                                                <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                                                    <Bot size={14} />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className={`p-4 rounded-2xl text-sm leading-relaxed shadow-sm ${
-                                            msg.role === 'user' 
-                                            ? 'bg-blue-500/10 border border-blue-500/20 text-white rounded-tr-sm shadow-[0_0_15px_-5px_rgba(59,130,246,0.2)]'
-                                            : 'bg-white/5 border border-white/10 text-neutral-200 rounded-tl-sm'
-                                        }`}>
-                                            {msg.content}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-
-                            {/* Processing Indicator */}
-                            {status === "processing" && (
-                                <div className="flex justify-start">
-                                    <div className="flex gap-3 max-w-[85%]">
-                                        <div className="mt-1 flex-shrink-0">
-                                            <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                                                <Bot size={14} />
-                                            </div>
-                                        </div>
-                                        <div className="p-4 rounded-2xl text-sm bg-white/5 border border-white/10 rounded-tl-sm flex items-center gap-2 text-neutral-400">
-                                            <div className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce"></div>
-                                            <div className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce delay-75"></div>
-                                            <div className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce delay-150"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div ref={messagesEndRef} className="h-4" />
-                        </div>
-
-                        {/* Input Area (Bottom) */}
-                        <div className="p-4 border-t border-white/10 bg-white/[0.02] shrink-0">
-                            {/* State: Listening/User Turn */}
-                            {status === "listening" && !showManual && (
-                                <div className="flex flex-col gap-4">
-                                    <div className="flex items-start gap-4">
-                                        <div className="w-12 h-12 bg-emerald-500/20 border border-emerald-500/40 rounded-full flex items-center justify-center text-emerald-400 shadow-[0_0_20px_rgba(52,211,153,0.3)] animate-pulse shrink-0 mt-1">
-                                            <Mic size={20} />
-                                        </div>
-                                        <div className="flex-1 bg-black/40 border border-white/10 rounded-xl p-4 min-h-[64px] shadow-inner relative">
-                                            {transcript ? (
-                                                <p className="text-white text-sm">{transcript}</p>
-                                            ) : (
-                                                <p className="text-neutral-500 text-sm italic">Listening to your response...</p>
-                                            )}
-                                            
-                                            <div className="absolute right-2 top-3">
-                                                <button 
-                                                    onClick={() => setShowManual(true)} 
-                                                    className="px-3 py-1.5 bg-blue-500/20 hover:bg-blue-500/40 border border-blue-500/50 rounded-lg text-[10px] uppercase tracking-wider font-bold text-blue-300 transition-colors shadow-lg"
-                                                >
-                                                    Use Keyboard Instead
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-between items-center w-full pl-16">
-                                        <button 
-                                            onClick={() => {
-                                                if (listening) {
-                                                    SpeechRecognition.stopListening();
-                                                } else {
-                                                    SpeechRecognition.startListening({ continuous: true, language: 'en-US' });
-                                                }
-                                            }}
-                                            className={`px-4 py-2 rounded-xl font-bold uppercase tracking-widest text-[10px] flex items-center gap-2 transition-all border ${listening ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'}`}
-                                        >
-                                            {listening ? <PauseCircle size={14} /> : <PlayCircle size={14} />} 
-                                            {listening ? 'Pause Mic' : 'Resume Mic'}
-                                        </button>
-
-                                        <button 
-                                            onClick={handleMicSendClick}
-                                            disabled={!transcript.trim()}
-                                            className={`px-6 py-2.5 rounded-xl font-bold uppercase tracking-widest text-xs flex items-center gap-2 transition-all shadow-[0_0_20px_-5px_rgba(52,211,153,0.5)]
-                                            ${transcript.trim() 
-                                                ? "bg-emerald-500 hover:bg-emerald-400 text-black border border-emerald-500/50" 
-                                                : "bg-white/5 text-neutral-500 cursor-not-allowed border border-white/10"}`}
-                                        >
-                                            <Send size={14} /> Finish & Send
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* State: Manual Typing Mode */}
-                            {(status === "listening" && showManual) && (
-                                <div className="flex items-end gap-3">
-                                    <div className="flex-1">
-                                        <p className="text-[10px] text-neutral-400 mb-2 uppercase tracking-widest font-bold flex items-center gap-2">
-                                            <User size={12} /> Keyboard Input Mode
-                                        </p>
-                                        <textarea 
-                                            value={manualInput}
-                                            onChange={(e) => setManualInput(e.target.value)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && !e.shiftKey) {
-                                                    e.preventDefault();
-                                                    submitUserResponse(manualInput);
-                                                }
-                                            }}
-                                            autoFocus
-                                            placeholder="Type your answer here... (Press Enter to send)"
-                                            className="w-full bg-black/50 border border-emerald-500/30 rounded-xl p-3 text-sm focus:outline-none focus:border-emerald-500 transition-colors text-white resize-none h-20 shadow-inner block"
-                                        />
-                                    </div>
-                                    <div className="flex flex-col gap-2 shrink-0">
-                                        <button 
-                                            onClick={() => submitUserResponse(manualInput)}
-                                            disabled={!manualInput.trim()}
-                                            className={`p-3 rounded-xl transition-all flex items-center justify-center border
-                                                ${manualInput.trim() ? "bg-emerald-500 hover:bg-emerald-400 text-black border-emerald-500/50 shadow-[0_0_15px_-5px_rgba(52,211,153,0.5)]" : "bg-white/5 text-neutral-500 border-white/10"}`}
-                                        >
-                                            <Send size={18} />
-                                        </button>
-                                        <button 
-                                            onClick={() => setShowManual(false)}
-                                            className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] uppercase font-bold text-neutral-400 transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* State: Not Listening / Other */}
-                            {status !== "listening" && status !== "waiting" && (
-                                <div className="flex items-center justify-center h-16 bg-white/[0.02] border border-white/5 rounded-xl">
-                                    <p className="text-neutral-500 text-xs tracking-widest uppercase font-bold flex items-center gap-2 animate-pulse">
-                                        {status === "initializing" && "Preparing session"}
-                                        {status === "processing" && "AI is reflecting..."}
-                                        {status === "speaking" && "AI is speaking..."}
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                    )}
                 </div>
-            </main>
+            </div>
 
-            {/* Modals */}
-            {showExitModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/80 backdrop-blur-sm">
-                    <div className="relative bg-neutral-950 border border-white/10 rounded-3xl w-full max-w-md p-8 shadow-2xl animate-in zoom-in-95 duration-300">
-                        <div className="flex flex-col items-center text-center">
-                            <div className="w-16 h-16 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center mb-6">
-                                <LogOut size={32} className="text-red-400" />
+            {/* Exit Confirmation Modal */}
+            {showExitConfirm && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center">
+                    <div className="bg-[#0a0a0a] border border-white/10 rounded-3xl p-8 max-w-md w-full mx-4 shadow-[0_20px_60px_-10px_rgba(0,0,0,0.8)] relative overflow-hidden">
+                        <div className="absolute inset-0 bg-gradient-to-br from-red-500/[0.03] to-transparent pointer-events-none" />
+
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                                    <AlertCircle size={24} className="text-red-400" />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-extrabold text-white">End Interview?</h3>
+                                    <p className="text-neutral-400 text-sm mt-1">This action cannot be undone.</p>
+                                </div>
                             </div>
-                            <h3 className="text-2xl font-bold mb-2">Exit Interview?</h3>
-                            <p className="text-neutral-400 text-sm mb-8 leading-relaxed">Your session data will be lost. Are you sure you want to exit the assessment?</p>
-                            <div className="grid grid-cols-2 gap-4 w-full">
-                                <button onClick={() => setShowExitModal(false)} className="px-5 py-3.5 rounded-xl border border-white/10 bg-white/5 text-sm font-bold text-neutral-300 hover:bg-white/10 transition-colors">Return</button>
-                                <button onClick={exitInterview} className="px-5 py-3.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-sm font-bold shadow-lg shadow-red-500/30 transition-colors">Confirm Exit</button>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowExitConfirm(false)}
+                                    className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-neutral-300 font-bold text-xs uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all"
+                                >
+                                    Continue
+                                </button>
+                                <button
+                                    onClick={endInterview}
+                                    className="flex-1 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 font-bold text-xs uppercase tracking-widest hover:bg-red-500/20 transition-all"
+                                >
+                                    End Session
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            {warningModal && status !== "terminated" && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
-                    <div className="relative bg-neutral-950 border border-orange-500/50 rounded-3xl w-full max-w-md p-8 shadow-2xl animate-in zoom-in-95 duration-300">
-                        <div className="flex flex-col items-center text-center">
-                            <div className="w-16 h-16 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center justify-center mb-6 animate-pulse">
-                                <AlertCircle size={32} className="text-orange-400" />
-                            </div>
-                            <h3 className="text-2xl font-bold mb-2">Violation #{violations}</h3>
-                            <p className="text-neutral-300 text-sm mb-4 font-semibold p-3 bg-white/5 rounded-lg border border-white/10 w-full">{warningModal.reason}</p>
-                            <p className="text-orange-400/80 text-xs mb-8">Strike {violations} of {MAX_VIOLATIONS}. System terminates upon {MAX_VIOLATIONS} strikes.</p>
-                            <button onClick={() => { setWarningModal(null); enterFullscreen(); }} className="w-full px-4 py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold tracking-wide shadow-lg shadow-orange-500/30">I Understand</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {showFullscreenPrompt && !warningModal && status !== "terminated" && (
-                <div className="fixed bottom-8 right-8 z-[100] animate-in slide-in-from-bottom-5 duration-500">
-                    <div className="bg-neutral-950/90 border border-amber-500/30 rounded-2xl p-5 shadow-2xl backdrop-blur-xl max-w-xs">
-                        <p className="text-amber-400 text-xs uppercase tracking-widest font-bold mb-2 flex items-center gap-2"><ShieldAlert size={14} /> Fullscreen Required</p>
-                        <p className="text-neutral-400 text-xs mb-4">You must re-enter fullscreen immediately.</p>
-                        <button onClick={enterFullscreen} className="w-full text-xs px-4 py-2.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-300 font-bold hover:bg-amber-500 hover:text-black transition-all">Re-enter Mode</button>
-                    </div>
-                </div>
-            )}
+            {/* CSS Animation for sound wave */}
+            <style>{`
+                @keyframes soundWave {
+                    0% { height: 4px; }
+                    100% { height: 28px; }
+                }
+            `}</style>
         </div>
     );
 }
