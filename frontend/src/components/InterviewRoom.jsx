@@ -42,11 +42,17 @@ export default function InterviewRoom() {
     const streamRef = useRef(null);
     const timerRef = useRef(null);
 
-    // Refs
+    // Refs — these keep the latest values accessible inside stale closures
     const synthRef = useRef(window.speechSynthesis);
     const chatEndRef = useRef(null);
     const [expandedEval, setExpandedEval] = useState(null);
     const isMountedRef = useRef(true);
+    const currentQuestionRef = useRef("");
+    const conversationHistoryRef = useRef([]);
+
+    // Keep refs in sync with state
+    useEffect(() => { currentQuestionRef.current = currentQuestion; }, [currentQuestion]);
+    useEffect(() => { conversationHistoryRef.current = conversationHistory; }, [conversationHistory]);
 
     // ── Auto-scroll chat ────────────────────────────────────────────
     useEffect(() => {
@@ -279,12 +285,12 @@ export default function InterviewRoom() {
                     ...(token ? { Authorization: `Bearer ${token}` } : {}),
                 },
                 body: JSON.stringify({
-                    question: currentQuestion,
+                    question: currentQuestionRef.current,
                     userAnswer: transcribedText,
                     role,
                     experienceLevel,
                     jd,
-                    conversationHistory,
+                    conversationHistory: conversationHistoryRef.current,
                 }),
             });
 
@@ -313,7 +319,7 @@ export default function InterviewRoom() {
 
                 setConversationHistory((prev) => [
                     ...prev,
-                    { question: currentQuestion, answer: transcribedText },
+                    { question: currentQuestionRef.current, answer: transcribedText },
                 ]);
                 setCurrentQuestion(data.nextQuestion);
                 setCurrentSkillTag(data.skillTag || "General");
