@@ -21,16 +21,6 @@ export default function InterviewRoom() {
     const [phase, setPhase] = useState("ai-speaking"); // ai-speaking, listening, processing
     const [started, setStarted] = useState(false);
     const [showExitModal, setShowExitModal] = useState(false);
-
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    };
-
-    useEffect(() => {
-        scrollToBottom();
-    }, [messages, phase]);
-
-    // Anti-plagiarism state
     const [violations, setViolations] = useState(0);
     const [violationLog, setViolationLog] = useState([]);
     const [warningModal, setWarningModal] = useState(null); // { reason, count }
@@ -57,6 +47,14 @@ Rules:
             `,
         },
     ]);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages, phase]);
 
     // ─── Fullscreen ────────────────────────────────────────────────────────────
 
