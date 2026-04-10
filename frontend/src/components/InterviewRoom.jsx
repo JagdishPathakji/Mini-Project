@@ -13,7 +13,7 @@ export default function InterviewRoom() {
     const navigate = useNavigate();
     const { role, difficulty, jobDescription } = location.state || {};
 
-    const { transcript, resetTranscript } = useSpeechRecognition();
+    const { transcript, resetTranscript, listening } = useSpeechRecognition();
     const silenceTimer = useRef(null);
     const containerRef = useRef(null);
     const messagesEndRef = useRef(null);
@@ -181,7 +181,10 @@ Rules:
         setMessages(prev => [...prev, { role: "assistant", content: text }]);
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = "en-US";
-        utterance.onstart = () => setPhase("ai-speaking");
+        utterance.onstart = () => {
+            setPhase("ai-speaking");
+            SpeechRecognition.stopListening();
+        };
         utterance.onend = () => {
             setPhase("listening");
             resetTranscript();
@@ -234,7 +237,7 @@ Rules:
                 return updated;
             });
             resetTranscript();
-        }, 2500); // Faster response time
+        }, 6000); // 6 seconds of silence as requested
     }, [transcript, phase]);
 
     // ─── Exit ──────────────────────────────────────────────────────────────────
@@ -308,7 +311,7 @@ Rules:
                                         phase === 'processing' ? 'text-blue-400' : 
                                         'text-emerald-400'
                                     }>
-                                        {phase === "ai-speaking" ? "Speaking" : phase === "processing" ? "Thinking" : "Listening"}
+                                        {phase === "ai-speaking" ? "Speaking" : phase === "processing" ? "Thinking" : (listening ? "Listening" : "Ready")}
                                     </span>
                                 </div>
                             </div>
