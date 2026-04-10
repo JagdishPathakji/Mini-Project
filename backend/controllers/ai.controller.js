@@ -58,10 +58,9 @@ const aiController = async (req, res) => {
 
 const voiceinterview = async (req, res) => {
     try {
-        const { messages, model } = req.body;
 
-        console.info("\x1b[36m[AI Interview]\x1b[0m Incoming request at /user/ai/interview");
-        console.log("Messages Received:", JSON.stringify(messages, null, 2));
+        const { messages } = req.body;
+        console.log(process.env.OLLAMA_API_KEY)
 
         if (!messages || !Array.isArray(messages)) {
             return res.status(400).send({
@@ -70,27 +69,24 @@ const voiceinterview = async (req, res) => {
             });
         }
 
-        const api_key = process.env.OLLAMA_API_KEY || "31dbc890aff540ac8fe835a4bdf7853b.Y7yR3jLgZ5CQu5WlqQOanCp0";
-        const host = process.env.OLLAMA_HOST || "https://ollama.com";
+        const { Ollama } = await import("ollama");
 
         const ollama = new Ollama({
-            host: host,
+            host: "https://ollama.com",
             headers: {
-                Authorization: `Bearer ${api_key}`
+                Authorization: "Bearer 31dbc890aff540ac8fe835a4bdf7853b.Y7yR3jLgZ5CQu5WlqQOanCp0"
             },
         });
 
         const response = await ollama.chat({
-            model: model || "gpt-oss:120b-cloud",
+            model: "gpt-oss:120b-cloud",
             messages,
             stream: true
         });
 
         let modified = "";
         for await (const part of response) {
-            if (part?.message?.content) {
-                modified += part.message.content;
-            }
+            modified += part.message.content;
         }
 
         return res.status(200).send({
@@ -100,15 +96,10 @@ const voiceinterview = async (req, res) => {
 
     }
     catch (error) {
-        console.error("Voice Interview AI Error Details:", {
-            message: error.message,
-            stack: error.stack,
-            host: process.env.OLLAMA_HOST || "https://ollama.com"
-        });
+        console.error(error);
         return res.status(500).send({
             status: false,
-            message: "Internal server error",
-            error: error.message
+            message: "Internal server error"
         });
     }
 }
