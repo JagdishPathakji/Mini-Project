@@ -50,7 +50,7 @@ export default function DSAInterviewRoom() {
     const [submitStage, setSubmitStage] = useState("");
     const [liveTestcases, setLiveTestcases] = useState([]);
 
-    const languages = ["python", "javascript", "java", "cpp", "c"];
+    const languages = ["python", "javascript", "java", "cpp"];
 
     const timerRef = useRef(null);
 
