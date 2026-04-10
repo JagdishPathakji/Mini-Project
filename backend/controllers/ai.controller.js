@@ -58,9 +58,7 @@ const aiController = async (req, res) => {
 
 const voiceinterview = async (req, res) => {
     try {
-
         const { messages } = req.body;
-        console.log(process.env.OLLAMA_API_KEY)
 
         if (!messages || !Array.isArray(messages)) {
             return res.status(400).send({
@@ -74,35 +72,29 @@ const voiceinterview = async (req, res) => {
         const ollama = new Ollama({
             host: "https://ollama.com",
             headers: {
-                Authorization: "Bearer 31dbc890aff540ac8fe835a4bdf7853b.Y7yR3jLgZ5CQu5WlqQOanCp0"
+                Authorization: `Bearer ${process.env.OLLAMA_API_KEY}`
             },
         });
 
         const response = await ollama.chat({
             model: "gpt-oss:120b-cloud",
             messages,
-            stream: true
+            stream: false
         });
-
-        let modified = "";
-        for await (const part of response) {
-            modified += part.message.content;
-        }
 
         return res.status(200).send({
             status: true,
-            message: modified
+            message: response.message.content
         });
 
-    }
-    catch (error) {
+    } catch (error) {
         console.error(error);
         return res.status(500).send({
             status: false,
             message: "Internal server error"
         });
     }
-}
+};
 
 module.exports = {
     voiceinterview,

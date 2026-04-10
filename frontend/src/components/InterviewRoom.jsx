@@ -1,19 +1,25 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 import { API_BASE_URL, COMMON_HEADERS } from "../config";
-const BACKEND_URL = `${API_BASE_URL}/user/ai/interview`;
 import Navbar from "./Navbar";
 
+const BACKEND_URL = `${API_BASE_URL}/user/ai/interview`;
 
 export default function InterviewRoom() {
     const location = useLocation();
     const { role, difficulty, jobDescription } = location.state || {};
 
-    const { transcript, resetTranscript } = useSpeechRecognition();
+    const {
+        transcript,
+        resetTranscript,
+        browserSupportsSpeechRecognition,
+        isMicrophoneAvailable
+    } = useSpeechRecognition();
+
     const silenceTimer = useRef(null);
 
-    const [phase, setPhase] = useState("ai-speaking");
+    const [phase, setPhase] = useState("idle"); // idle | ai-speaking | listening
     const [started, setStarted] = useState(false);
 
     const [messages, setMessages] = useState([
@@ -36,26 +42,50 @@ Rules:
         },
     ]);
 
+    // ✅ Debug logs
+    useEffect(() => {
+        console.log("Transcript:", transcript);
+    }, [transcript]);
+
+    useEffect(() => {
+        console.log("Supported:", browserSupportsSpeechRecognition);
+        console.log("Mic Available:", isMicrophoneAvailable);
+    }, []);
+
     const speak = (text) => {
-        if (!text || !text.trim()) return;
+        if (!text || !text.trim()) {
+            startListening();
+            return;
+        }
 
         speechSynthesis.cancel();
-        setMessages(prev => [...prev, { role: "assistant", content: text }]);
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = "en-US";
 
+        setMessages(prev => [...prev, { role: "assistant", content: text }]);
+
         utterance.onstart = () => setPhase("ai-speaking");
+
         utterance.onend = () => {
-            setPhase("listening");
-            SpeechRecognition.startListening({ continuous: true });
+            startListening();
         };
 
         speechSynthesis.speak(utterance);
     };
 
+    const startListening = () => {
+        setPhase("listening");
+
+        setTimeout(() => {
+            SpeechRecognition.startListening(); // ❌ removed continuous (buggy)
+        }, 300);
+    };
+
     const callAI = async (context) => {
         try {
+            console.log("Calling AI...");
+
             const res = await fetch(BACKEND_URL, {
                 method: "POST",
                 headers: COMMON_HEADERS,
@@ -63,19 +93,32 @@ Rules:
             });
 
             const data = await res.json();
+            console.log("AI:", data);
+
             speak(data.message);
+
         } catch (err) {
-            console.error(err);
+            console.error("API ERROR:", err);
             speak("Sorry, something went wrong.");
         }
     };
 
-    useEffect(() => {
-        if (!role || !difficulty) return;
+    // ✅ Start Interview (MANDATORY USER INTERACTION)
+    const startInterview = async () => {
         if (started) return;
+
         setStarted(true);
+
+        try {
+            await navigator.mediaDevices.getUserMedia({ audio: true });
+            console.log("Mic permission granted");
+        } catch (err) {
+            console.error("Mic permission denied", err);
+            return;
+        }
+
         callAI(messages);
-    }, []);
+    };
 
     useEffect(() => {
         if (phase !== "listening") return;
@@ -85,7 +128,6 @@ Rules:
 
         silenceTimer.current = setTimeout(() => {
             SpeechRecognition.stopListening();
-
 
             const userMsg = {
                 role: "user",
@@ -99,48 +141,34 @@ Rules:
             });
 
             resetTranscript();
-        }, 4000);
+        }, 3000);
     }, [transcript, phase]);
 
     return (
-        <div className="min-h-screen bg-black text-white font-sans selection:bg-white selection:text-black">
+        <div className="min-h-screen bg-black text-white">
             <Navbar />
 
-            <main className="pt-24 pb-12 max-w-4xl mx-auto px-6">
+            <main className="pt-24 max-w-4xl mx-auto px-6">
 
-                <div className="mb-10">
-                    <h1 className="text-3xl font-bold mb-2">Interview Room</h1>
-                    <p className="text-neutral-400">
-                        Live AI-powered mock interview session.
-                    </p>
+                <h1 className="text-3xl font-bold mb-4">Interview Room</h1>
+
+                {!started && (
+                    <button
+                        onClick={startInterview}
+                        className="bg-white text-black px-6 py-3 rounded-lg mb-6"
+                    >
+                        Start Interview
+                    </button>
+                )}
+
+                <div className="mb-4">
+                    <p>Status: {phase}</p>
                 </div>
 
-                <div className="bg-neutral-950 border border-neutral-900 rounded-xl p-8 space-y-6">
-
-                    {/* Role Info */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-                        <div>
-                            <p className="text-neutral-500 uppercase tracking-wider mb-1">Role</p>
-                            <p className="text-white font-medium">{role}</p>
-                        </div>
-                        <div>
-                            <p className="text-neutral-500 uppercase tracking-wider mb-1">Difficulty</p>
-                            <p className="text-white font-medium">{difficulty}</p>
-                        </div>
-                        <div>
-                            <p className="text-neutral-500 uppercase tracking-wider mb-1">Status</p>
-                            <p className={phase === "ai-speaking" ? "text-yellow-400" : "text-green-400"}>
-                                {phase === "ai-speaking" ? "AI Speaking" : "Listening"}
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Transcript Box */}
-                    <div className="bg-neutral-900 border border-neutral-800 rounded-lg p-4 min-h-[120px] text-neutral-300">
-                        {transcript || "Waiting for your response..."}
-                    </div>
-
+                <div className="bg-neutral-900 p-4 rounded">
+                    {transcript || "Waiting for your response..."}
                 </div>
+
             </main>
         </div>
     );
