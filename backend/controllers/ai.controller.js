@@ -60,7 +60,9 @@ const voiceinterview = async (req, res) => {
     try {
         const { messages, model } = req.body;
 
-        console.log(messages)
+        console.info("\x1b[36m[AI Interview]\x1b[0m Incoming request at /user/ai/interview");
+        console.log("Messages Received:", JSON.stringify(messages, null, 2));
+
         if (!messages || !Array.isArray(messages)) {
             return res.status(400).send({
                 status: false,

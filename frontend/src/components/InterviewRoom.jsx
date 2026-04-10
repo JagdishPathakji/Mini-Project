@@ -32,7 +32,15 @@ export default function InterviewRoom() {
     const [showExitModal, setShowExitModal] = useState(false);
 
     // Refs for synchronization
-    const { transcript, resetTranscript, listening } = useSpeechRecognition();
+    const { 
+        transcript, 
+        resetTranscript, 
+        listening, 
+        browserSupportsSpeechRecognition,
+        isMicrophoneAvailable 
+    } = useSpeechRecognition();
+    const [manualInput, setManualInput] = useState("");
+    const [showManual, setShowManual] = useState(false);
     const silenceTimerRef = useRef(null);
     const messagesEndRef = useRef(null);
     const containerRef = useRef(null);
@@ -123,7 +131,7 @@ export default function InterviewRoom() {
         utterance.onend = () => {
             setStatus("listening");
             resetTranscript();
-            SpeechRecognition.startListening({ continuous: true });
+            SpeechRecognition.startListening({ continuous: true, language: 'en-US' });
         };
         utterance.onerror = () => setStatus("listening"); // Fail-safe fallback
 
@@ -134,6 +142,7 @@ export default function InterviewRoom() {
     // 2. AI Request Logic
     const callAI = useCallback(async (context) => {
         setStatus("processing");
+        console.log("Frontend Calling Backend with context:", context);
         try {
             const res = await fetch(`${BACKEND_URL}`, {
                 method: "POST",
@@ -168,25 +177,34 @@ export default function InterviewRoom() {
             return;
         }
 
+        console.log("Transcript Detected:", transcript);
+
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
         
         silenceTimerRef.current = setTimeout(() => {
             const userSpeech = transcript.trim();
-            resetTranscript();
-            SpeechRecognition.stopListening();
-            
-            const userMsg = { role: "user", content: userSpeech };
-            setMessages(prev => {
-                const updated = [...prev, userMsg];
-                callAI(updated);
-                return updated;
-            });
-        }, 6000); // 6 seconds wait
+            handleUserResponse(userSpeech);
+        }, 6000); 
 
         return () => {
             if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
         };
-    }, [transcript, status, callAI, resetTranscript]);
+    }, [transcript, status]);
+
+    const handleUserResponse = useCallback((content) => {
+        if (!content.trim()) return;
+        resetTranscript();
+        SpeechRecognition.stopListening();
+        
+        const userMsg = { role: "user", content: content.trim() };
+        setMessages(prev => {
+            const updated = [...prev, userMsg];
+            callAI(updated);
+            return updated;
+        });
+        setManualInput("");
+        setShowManual(false);
+    }, [callAI, resetTranscript]);
 
     // ─── RENDER HELPERS ─────────────────────────────────────────────────────────
     const phaseLabel = status === "speaking" ? "Speaking" : 
@@ -286,6 +304,15 @@ export default function InterviewRoom() {
                                     </span>
                                 </div>
                             </div>
+                            <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-4 backdrop-blur-md">
+                                <p className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold mb-1">Mic Status</p>
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${!browserSupportsSpeechRecognition ? 'bg-red-500' : isMicrophoneAvailable ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                    <p className="text-white text-xs font-semibold">
+                                        {!browserSupportsSpeechRecognition ? "Unsupported" : isMicrophoneAvailable ? "Active" : "Check Permission"}
+                                    </p>
+                                </div>
+                            </div>
                             <div className={`border rounded-2xl p-4 backdrop-blur-md transition-colors duration-500 ${violations > 0 ? 'bg-orange-500/10 border-orange-500/30' : 'bg-white/[0.02] border-white/[0.05]'}`}>
                                 <p className={`text-[10px] uppercase tracking-widest font-bold mb-1 ${violations > 0 ? 'text-orange-400' : 'text-neutral-500'}`}>Violations</p>
                                 <p className={`font-bold ${violations > 0 ? 'text-orange-400' : 'text-white'}`}>{violations} <span className="text-neutral-500 text-xs">/ {MAX_VIOLATIONS}</span></p>
@@ -328,13 +355,61 @@ export default function InterviewRoom() {
                                 <div ref={messagesEndRef} />
                             </div>
 
-                            {/* Live Floating Transcript (Overlay at bottom) */}
-                            {listening && transcript && (
-                                <div className="absolute bottom-4 left-6 right-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                    <p className="text-[8px] text-emerald-400 uppercase tracking-widest font-bold mb-1 flex items-center gap-2">
-                                        <Mic size={10} className="animate-pulse" /> Capturing...
-                                    </p>
-                                    <p className="text-white text-sm font-medium line-clamp-2 italic">"{transcript}"</p>
+                            {/* Live Floating Transcript / Manual Fallback */}
+                            {((listening && transcript) || showManual) && (
+                                <div className="absolute bottom-4 left-6 right-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-300 z-50 shadow-2xl">
+                                    {!showManual ? (
+                                        <>
+                                            <p className="text-[8px] text-emerald-400 uppercase tracking-widest font-bold mb-1 flex items-center gap-2">
+                                                <Mic size={10} className="animate-pulse" /> Capturing...
+                                            </p>
+                                            <p className="text-white text-sm font-medium line-clamp-2 italic flex items-center justify-between">
+                                                "{transcript}"
+                                                <span onClick={() => setShowManual(true)} className="text-[9px] bg-white/10 px-2 py-1 rounded cursor-pointer hover:bg-white/20 ml-4 font-bold uppercase transition-all">Type Instead?</span>
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <div className="flex flex-col gap-3">
+                                            <p className="text-[8px] text-emerald-400 uppercase tracking-widest font-bold flex items-center gap-2">
+                                                <TerminalSquare size={10} /> Manual Mode
+                                            </p>
+                                            <div className="flex gap-2">
+                                                <input 
+                                                    type="text" 
+                                                    value={manualInput} 
+                                                    onChange={(e) => setManualInput(e.target.value)}
+                                                    onKeyDown={(e) => e.key === 'Enter' && handleUserResponse(manualInput)}
+                                                    placeholder="Type your answer here..."
+                                                    className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-emerald-500/50"
+                                                    autoFocus
+                                                />
+                                                <button 
+                                                    onClick={() => handleUserResponse(manualInput)}
+                                                    className="bg-emerald-500 text-black px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-400 transition-all font-sans"
+                                                >
+                                                    Send
+                                                </button>
+                                                <button 
+                                                    onClick={() => { setShowManual(false); setManualInput(""); }}
+                                                    className="bg-white/5 text-neutral-400 px-3 py-2 rounded-xl text-xs hover:bg-white/10 transition-all font-sans"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Help Banner if Voice is failing */}
+                            {listening && !transcript && !showManual && started && (
+                                <div className="absolute bottom-4 right-6 flex flex-col items-end animate-in fade-in slide-in-from-right-4 duration-700">
+                                    <button 
+                                        onClick={() => setShowManual(true)}
+                                        className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white hover:bg-white/10 transition-all flex items-center gap-2 shadow-inner"
+                                    >
+                                        Voice not working? Click to type
+                                    </button>
                                 </div>
                             )}
                         </div>
