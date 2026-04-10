@@ -72,15 +72,32 @@ export default function DSAInterviewRoom() {
                 const data = await response.json();
 
                 if (data.status) {
-                    setQuestions(data.doc);
+                    // Enrich questions with testcases by fetching individual details
+                    const enrichedQuestions = await Promise.all(
+                        data.doc.map(async (q) => {
+                            try {
+                                const qRes = await fetch(`${API_BASE_URL}/question/fetchquestion?qno=${q.qno}`, {
+                                    credentials: "include",
+                                    headers: COMMON_HEADERS
+                                });
+                                const qData = await qRes.json();
+                                return qData.status ? qData.doc : q;
+                            } catch (e) {
+                                console.error(`Failed to fetch details for question ${q.qno}:`, e);
+                                return q;
+                            }
+                        })
+                    );
+
+                    setQuestions(enrichedQuestions);
                     // Only set defaults if no saved codes exist for the current language
                     const savedLang = sessionStorage.getItem(`interview_lang_${difficulty}`) || "python";
                     const savedCodes = sessionStorage.getItem(`interview_codes_${difficulty}_${savedLang}`);
                     if (!savedCodes || JSON.parse(savedCodes).every(c => !c)) {
                         if (savedLang === "python") {
-                            setCodes(data.doc.map(() => "# Start writing your code here"));
+                            setCodes(enrichedQuestions.map(() => "# Start writing your code here"));
                         } else {
-                            setCodes(data.doc.map(() => "// Start writing your code here"));
+                            setCodes(enrichedQuestions.map(() => "// Start writing your code here"));
                         }
                     }
                     setLoading(false);
