@@ -50,7 +50,7 @@ export default function ChallengeRoom() {
     const [tieRequested, setTieRequested] = useState(false);
     const [opponentTieRequest, setOpponentTieRequest] = useState(false);
 
-    const languages = ["python", "javascript", "java", "cpp", "c"];
+    const languages = ["python", "javascript", "java", "cpp"];
 
     const myUserId = localStorage.getItem("userId");
     const myPlayer = players?.find(p => String(p.userId) === String(myUserId));
@@ -152,12 +152,12 @@ export default function ChallengeRoom() {
             if (payload.reason === "solved" && isWinner) {
                 const end = Date.now() + 3000;
                 const frame = () => {
-                    confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0, y: 0.7 }, colors: ['#34d399','#60a5fa','#a78bfa','#facc15','#f472b6'] });
-                    confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors: ['#34d399','#60a5fa','#a78bfa','#facc15','#f472b6'] });
+                    confetti({ particleCount: 3, angle: 60, spread: 55, origin: { x: 0, y: 0.7 }, colors: ['#34d399', '#60a5fa', '#a78bfa', '#facc15', '#f472b6'] });
+                    confetti({ particleCount: 3, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors: ['#34d399', '#60a5fa', '#a78bfa', '#facc15', '#f472b6'] });
                     if (Date.now() < end) requestAnimationFrame(frame);
                 };
                 frame();
-                confetti({ particleCount: 120, spread: 100, origin: { y: 0.6 }, colors: ['#34d399','#60a5fa','#a78bfa','#facc15','#fb923c'] });
+                confetti({ particleCount: 120, spread: 100, origin: { y: 0.6 }, colors: ['#34d399', '#60a5fa', '#a78bfa', '#facc15', '#fb923c'] });
             }
         });
 
@@ -623,18 +623,18 @@ export default function ChallengeRoom() {
                     <div className="w-full max-w-md bg-[#0d0d0d] border border-white/10 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
                         {/* Background glow */}
                         <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/10 blur-[60px] pointer-events-none" />
-                        
+
                         <div className="relative z-10 flex flex-col items-center text-center">
                             <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mb-6">
                                 <AlertCircle size={32} className="text-rose-500" />
                             </div>
-                            
+
                             <h3 className="text-2xl font-bold text-white mb-3">Leave Challenge?</h3>
                             <p className="text-neutral-400 text-sm leading-relaxed mb-8">
-                                Navigating away will declare you as <span className="text-rose-400 font-bold">forfeited</span>. 
+                                Navigating away will declare you as <span className="text-rose-400 font-bold">forfeited</span>.
                                 Your opponent will win the match immediately. Are you sure?
                             </p>
-                            
+
                             <div className="grid grid-cols-2 gap-4 w-full">
                                 <button
                                     onClick={handleCancelLeave}
