@@ -60,6 +60,7 @@ const voiceinterview = async (req, res) => {
     try {
         const { messages, model } = req.body;
 
+        console.log(messages)
         if (!messages || !Array.isArray(messages)) {
             return res.status(400).send({
                 status: false,
