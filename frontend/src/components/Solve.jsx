@@ -42,7 +42,7 @@ export default function Solve() {
     const [runResults, setRunResults] = useState(null);
     const [showRunResult, setShowRunResult] = useState(false);
 
-    const languages = ["python", "javascript", "java", "cpp", "c"];
+    const languages = ["python", "javascript", "java", "cpp"];
 
     const handleRun = async () => {
         if (!code) {
