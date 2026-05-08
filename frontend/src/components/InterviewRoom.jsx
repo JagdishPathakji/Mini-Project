@@ -439,7 +439,7 @@ export default function InterviewRoom() {
                 <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-violet-600/10 blur-[120px] pointer-events-none" />
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-600/8 blur-[120px] pointer-events-none" />
                 <Navbar />
-                <div className="h-16 shrink-0 w-full" />
+                <div className="h-20 shrink-0 w-full" />
 
                 <main className="pt-12 pb-24 max-w-4xl mx-auto px-6 relative z-10">
                     <div className="text-center mb-12">
@@ -544,7 +544,7 @@ export default function InterviewRoom() {
     //  MAIN INTERVIEW ROOM
     // ════════════════════════════════════════════════════════════════
     return (
-        <div className="h-[100dvh] bg-[#030303] text-white font-sans selection:bg-white selection:text-black relative overflow-hidden flex flex-col">
+        <div className="min-h-[100dvh] bg-[#030303] text-white font-sans selection:bg-white selection:text-black relative overflow-x-hidden overflow-y-auto flex flex-col">
             {/* Ambient Gradients */}
             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-violet-600/8 blur-[120px] pointer-events-none" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-600/6 blur-[120px] pointer-events-none" />
@@ -614,7 +614,7 @@ export default function InterviewRoom() {
             </div>
 
             {/* ── Chat Transcript ── */}
-            <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6 pb-6 relative z-10 scroll-smooth">
+            <div className="flex-1 px-6 py-6 pb-6 relative z-10 overflow-y-auto scroll-smooth">
                 <div className="max-w-4xl mx-auto space-y-5 flex flex-col">
                     {transcript.map((item) => {
                         if (item.type === "question") {
