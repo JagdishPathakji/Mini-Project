@@ -203,21 +203,6 @@ export default function InterviewRoom() {
         startInterview();
     }, [role, experienceLevel, jd, speakText]);
 
-    useEffect(() => {
-        const handleBeforeUnload = (e) => {
-            if (!showSummary) {
-                e.preventDefault();
-                e.returnValue = "Are you sure you want to leave the interview?";
-            }
-        };
-
-        window.addEventListener("beforeunload", handleBeforeUnload);
-
-        return () => {
-            window.removeEventListener("beforeunload", handleBeforeUnload);
-        };
-    }, [showSummary]);
-
     // ══════════════════════════════════════════════════════════════════
     //  START RECORDING — capture mic audio via MediaRecorder
     // ══════════════════════════════════════════════════════════════════
