@@ -47,25 +47,27 @@ export default function InterviewRoom() {
     const chatEndRef = useRef(null);
     const [expandedEval, setExpandedEval] = useState(null);
     const [tabChanges, setTabChanges] = useState(0);
-    // Increment tab change counter and auto‑end interview after 4 changes
-    const handleTabChange = () => {
-        setTabChanges(prev => {
-            const newCount = prev + 1;
-            if (newCount > 4) {
-                // Exceeded allowed changes – finish interview
-                handleEndInterview();
-                return 0; // reset after ending
+
+    const handleEndInterviewRef = useRef(null);
+    
+    // Increment tab change counter and auto‑end interview after 4 visibility changes
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden && !showSummary) {
+                setTabChanges(prev => {
+                    const newCount = prev + 1;
+                    if (newCount > 4) {
+                        // Exceeded allowed changes – finish interview
+                        if (handleEndInterviewRef.current) handleEndInterviewRef.current();
+                    }
+                    return newCount;
+                });
             }
-            return newCount;
-        });
-    };
-    // Helper used by navigation buttons to enforce the tab‑change limit
-    const handleNavigation = (path) => {
-        handleTabChange();
-        // If the interview has already been ended, avoid further navigation
-        if (showSummary) return;
-        navigate(path);
-    };
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    }, [showSummary]);
     const isMountedRef = useRef(true);
     const currentQuestionRef = useRef("");
     const conversationHistoryRef = useRef([]);
@@ -391,6 +393,10 @@ export default function InterviewRoom() {
         setShowSummary(true);
     };
 
+    useEffect(() => {
+        handleEndInterviewRef.current = handleEndInterview;
+    });
+
     // ── Stats ───────────────────────────────────────────────────────
     const evaluations = transcript.filter((t) => t.type === "evaluation");
     const avgScore = evaluations.length > 0
@@ -516,13 +522,13 @@ export default function InterviewRoom() {
 
                     <div className="flex justify-center gap-4">
                         <button
-                            onClick={() => handleNavigation("/ai-interview")}
+                            onClick={() => navigate("/ai-interview")}
                             className="px-8 py-3 rounded-2xl bg-white text-black font-bold hover:bg-neutral-200 transition-all hover:-translate-y-0.5 shadow-[0_0_30px_-8px_rgba(255,255,255,0.15)]"
                         >
                             New Interview
                         </button>
                         <button
-                            onClick={() => handleNavigation("/dashboard")}
+                            onClick={() => navigate("/dashboard")}
                             className="px-8 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all hover:-translate-y-0.5"
                         >
                             Dashboard
@@ -580,9 +586,9 @@ export default function InterviewRoom() {
 <button
     id="end-interview-btn"
     onClick={handleEndInterview}
-    className="px-4 py-2 rounded-xl text-xs font-semibold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 cursor-pointer"
+    className="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_-3px_rgba(220,38,38,0.5)] transition-all cursor-pointer"
 >
-    End Interview
+    Exit Interview
 </button>
                     </div>
                 </div>
@@ -723,7 +729,17 @@ export default function InterviewRoom() {
 
             {/* ── Bottom Control Bar ── */}
             <div className="absolute bottom-0 left-0 right-0 z-20 border-t border-white/[0.06] bg-[#030303]/90 backdrop-blur-2xl">
-                <div className="max-w-4xl mx-auto px-6 py-5 flex items-center justify-center gap-6">
+                <div className="max-w-4xl mx-auto px-6 py-5 flex items-center justify-center gap-6 relative">
+                    
+                    {/* EXIT BUTTON - ALWAYS VISIBLE */}
+                    <div className="absolute right-6 top-1/2 -translate-y-1/2 hidden md:block">
+                        <button
+                            onClick={handleEndInterview}
+                            className="px-5 py-2.5 rounded-xl text-sm font-bold bg-red-600 hover:bg-red-500 text-white shadow-[0_0_20px_-5px_rgba(220,38,38,0.5)] transition-all"
+                        >
+                            Exit Interview
+                        </button>
+                    </div>
 
                     {/* Error */}
                     {phase === STATES.ERROR && (
