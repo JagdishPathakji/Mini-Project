@@ -22,9 +22,9 @@ const COMMON_HEADERS = {
 };
 
 const DIFF_META = {
-    Easy:   { color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/30" },
-    Medium: { color: "text-amber-400",   bg: "bg-amber-400/10",   border: "border-amber-400/30"   },
-    Hard:   { color: "text-rose-400",    bg: "bg-rose-400/10",    border: "border-rose-400/30"    },
+    Easy: { color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/30" },
+    Medium: { color: "text-amber-400", bg: "bg-amber-400/10", border: "border-amber-400/30" },
+    Hard: { color: "text-rose-400", bg: "bg-rose-400/10", border: "border-rose-400/30" },
 };
 
 const emptyTC = () => ({ input: "", output: "" });
@@ -89,11 +89,10 @@ function UserProfileModal({ user, onClose, onDelete, onToggleRole }) {
                     </div>
                     <h4 className="text-white text-xl font-bold">{user.firstname} {user.lastname}</h4>
                     <p className="text-neutral-500 text-sm mt-1">@{user.username}</p>
-                    <span className={`mt-3 px-3 py-1 rounded-full text-xs font-bold border ${
-                        user.role === "admin"
-                            ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
-                            : "bg-neutral-500/10 text-neutral-400 border-neutral-500/20"
-                    }`}>
+                    <span className={`mt-3 px-3 py-1 rounded-full text-xs font-bold border ${user.role === "admin"
+                        ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
+                        : "bg-neutral-500/10 text-neutral-400 border-neutral-500/20"
+                        }`}>
                         {user.role === "admin" ? "👑 Admin" : "User"}
                     </span>
                 </div>
@@ -133,9 +132,9 @@ function UserProfileModal({ user, onClose, onDelete, onToggleRole }) {
                     <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/10 text-neutral-400 hover:text-white hover:border-white/20 transition-all font-medium text-sm">Close</button>
                     {user._id !== localStorage.getItem("userId") && (
                         user.role === "admin"
-                            ? <button onClick={() => onToggleRole(user)} className="flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl bg-neutral-500/10 border border-neutral-500/30 text-neutral-400 hover:bg-neutral-500/20 transition-all font-semibold text-sm"><UserCog size={14}/> Demote to User</button>
-                            : <><button onClick={() => onToggleRole(user)} className="flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-all font-semibold text-sm"><Crown size={14}/> Promote</button>
-                               <button onClick={() => onDelete(user)} className="flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-all font-semibold text-sm"><Trash2 size={14}/> Delete</button></>
+                            ? <button onClick={() => onToggleRole(user)} className="flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl bg-neutral-500/10 border border-neutral-500/30 text-neutral-400 hover:bg-neutral-500/20 transition-all font-semibold text-sm"><UserCog size={14} /> Demote to User</button>
+                            : <><button onClick={() => onToggleRole(user)} className="flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-400 hover:bg-purple-500/20 transition-all font-semibold text-sm"><Crown size={14} /> Promote</button>
+                                <button onClick={() => onDelete(user)} className="flex items-center justify-center gap-2 flex-1 py-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-all font-semibold text-sm"><Trash2 size={14} /> Delete</button></>
                     )}
                 </div>
             </div>
@@ -203,7 +202,7 @@ function QuestionDrawer({ editQuestion = null, onClose, onSuccess }) {
         }
 
         const normalizedTestcases = testcases.map(tc => ({
-            input:  normalizeJudge(tc.input),
+            input: normalizeJudge(tc.input),
             output: normalizeJudge(tc.output),
         }));
 
@@ -216,10 +215,10 @@ function QuestionDrawer({ editQuestion = null, onClose, onSuccess }) {
 
         setLoading(true);
         try {
-            const url    = isEdit ? `${API}/admin/updatequestion/${editQuestion.qno}` : `${API}/admin/addquestion`;
+            const url = isEdit ? `${API}/admin/updatequestion/${editQuestion.qno}` : `${API}/admin/addquestion`;
             const method = isEdit ? "PUT" : "POST";
 
-            const res  = await fetch(url, { method, headers: COMMON_HEADERS, ...authOpts, body: JSON.stringify(payload) });
+            const res = await fetch(url, { method, headers: COMMON_HEADERS, ...authOpts, body: JSON.stringify(payload) });
             const data = await res.json();
             if (data.status) {
                 toast.success(data.message);
@@ -240,11 +239,10 @@ function QuestionDrawer({ editQuestion = null, onClose, onSuccess }) {
                 {/* Header */}
                 <div className="sticky top-0 bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/[0.07] px-4 sm:px-8 py-5 flex items-center justify-between z-10">
                     <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center border ${
-                            isEdit
-                                ? "bg-amber-500/15 border-amber-500/30"
-                                : "bg-blue-500/15 border-blue-500/30"
-                        }`}>
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center border ${isEdit
+                            ? "bg-amber-500/15 border-amber-500/30"
+                            : "bg-blue-500/15 border-blue-500/30"
+                            }`}>
                             {isEdit ? <Pencil size={16} className="text-amber-400" /> : <Plus size={18} className="text-blue-400" />}
                         </div>
                         <div>
@@ -285,9 +283,9 @@ function QuestionDrawer({ editQuestion = null, onClose, onSuccess }) {
                                 onChange={e => setField("qdifficulty", e.target.value)}
                                 className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all text-sm appearance-none cursor-pointer"
                             >
-                                <option value="Easy"   className="bg-neutral-900">Easy</option>
+                                <option value="Easy" className="bg-neutral-900">Easy</option>
                                 <option value="Medium" className="bg-neutral-900">Medium</option>
-                                <option value="Hard"   className="bg-neutral-900">Hard</option>
+                                <option value="Hard" className="bg-neutral-900">Hard</option>
                             </select>
                         </div>
                     </div>
@@ -381,11 +379,10 @@ function QuestionDrawer({ editQuestion = null, onClose, onSuccess }) {
                                             </span>
                                             <button
                                                 type="button" onClick={() => removeTC(i)}
-                                                className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
-                                                    testcases.length <= 3
-                                                        ? "text-neutral-700 cursor-not-allowed"
-                                                        : "text-neutral-500 hover:text-red-400 hover:bg-red-400/10"
-                                                }`}
+                                                className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${testcases.length <= 3
+                                                    ? "text-neutral-700 cursor-not-allowed"
+                                                    : "text-neutral-500 hover:text-red-400 hover:bg-red-400/10"
+                                                    }`}
                                                 title={testcases.length <= 3 ? "Min 3 test cases required" : "Remove"}
                                             >
                                                 <Trash2 size={13} />
@@ -436,11 +433,10 @@ function QuestionDrawer({ editQuestion = null, onClose, onSuccess }) {
                     <div className="sticky bottom-0 bg-[#0a0a0a]/95 backdrop-blur-xl pt-4 pb-2 -mx-4 sm:-mx-8 px-4 sm:px-8 border-t border-white/[0.07] mt-4">
                         <button
                             type="submit" disabled={loading || fetchingTCs}
-                            className={`w-full py-3.5 rounded-xl font-bold text-base transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
-                                isEdit
-                                    ? "bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-[0_0_30px_rgba(245,158,11,0.25)]"
-                                    : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-[0_0_30px_rgba(59,130,246,0.3)]"
-                            }`}
+                            className={`w-full py-3.5 rounded-xl font-bold text-base transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${isEdit
+                                ? "bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white shadow-[0_0_30px_rgba(245,158,11,0.25)]"
+                                : "bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white shadow-[0_0_30px_rgba(59,130,246,0.3)]"
+                                }`}
                         >
                             {loading ? (
                                 <><Loader2 size={18} className="animate-spin" /> {isEdit ? "Saving Changes..." : "Saving Question..."}</>
@@ -457,7 +453,7 @@ function QuestionDrawer({ editQuestion = null, onClose, onSuccess }) {
 
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 function StatCard({ icon, label, value, color }) {
-    const c = { blue:{bg:"bg-blue-500/10",border:"border-blue-500/20",text:"text-blue-400"}, purple:{bg:"bg-purple-500/10",border:"border-purple-500/20",text:"text-purple-400"}, emerald:{bg:"bg-emerald-500/10",border:"border-emerald-500/20",text:"text-emerald-400"}, amber:{bg:"bg-amber-500/10",border:"border-amber-500/20",text:"text-amber-400"} }[color];
+    const c = { blue: { bg: "bg-blue-500/10", border: "border-blue-500/20", text: "text-blue-400" }, purple: { bg: "bg-purple-500/10", border: "border-purple-500/20", text: "text-purple-400" }, emerald: { bg: "bg-emerald-500/10", border: "border-emerald-500/20", text: "text-emerald-400" }, amber: { bg: "bg-amber-500/10", border: "border-amber-500/20", text: "text-amber-400" } }[color];
     return (
         <div className={`bg-white/[0.02] border ${c.border} rounded-2xl p-6`}>
             <div className={`w-10 h-10 rounded-xl ${c.bg} border ${c.border} flex items-center justify-center ${c.text} mb-4`}>{icon}</div>
@@ -482,42 +478,42 @@ function OverviewTab() {
             finally { setLoading(false); }
         })();
     }, []);
-    if (loading) return <div className="py-24 flex items-center justify-center"><div className="w-8 h-8 border-2 border-neutral-800 border-t-purple-500 rounded-full animate-spin"/></div>;
+    if (loading) return <div className="py-24 flex items-center justify-center"><div className="w-8 h-8 border-2 border-neutral-800 border-t-purple-500 rounded-full animate-spin" /></div>;
     if (!stats) return null;
     const { questions: q, users: u, recentUsers } = stats;
-    const easyPct  = q.total > 0 ? (q.easy   / q.total * 100) : 0;
-    const medPct   = q.total > 0 ? (q.medium / q.total * 100) : 0;
-    const hardPct  = q.total > 0 ? (q.hard   / q.total * 100) : 0;
+    const easyPct = q.total > 0 ? (q.easy / q.total * 100) : 0;
+    const medPct = q.total > 0 ? (q.medium / q.total * 100) : 0;
+    const hardPct = q.total > 0 ? (q.hard / q.total * 100) : 0;
     const donut = q.total > 0
-        ? `conic-gradient(#10b981 0% ${easyPct}%, #f59e0b ${easyPct}% ${easyPct+medPct}%, #f43f5e ${easyPct+medPct}% 100%)`
+        ? `conic-gradient(#10b981 0% ${easyPct}%, #f59e0b ${easyPct}% ${easyPct + medPct}%, #f43f5e ${easyPct + medPct}% 100%)`
         : `conic-gradient(#262626 0% 100%)`;
     return (
         <div className="space-y-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard icon={<BookOpen size={20}/>}    label="Total Questions" value={q.total}        color="blue"/>
-                <StatCard icon={<Users size={20}/>}       label="Total Users"     value={u.total}        color="purple"/>
-                <StatCard icon={<TrendingUp size={20}/>}  label="New This Week"   value={u.newThisWeek}  color="emerald"/>
-                <StatCard icon={<Shield size={20}/>}      label="Admins"          value={u.admins}       color="amber"/>
+                <StatCard icon={<BookOpen size={20} />} label="Total Questions" value={q.total} color="blue" />
+                <StatCard icon={<Users size={20} />} label="Total Users" value={u.total} color="purple" />
+                <StatCard icon={<TrendingUp size={20} />} label="New This Week" value={u.newThisWeek} color="emerald" />
+                <StatCard icon={<Shield size={20} />} label="Admins" value={u.admins} color="amber" />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white/[0.02] border border-white/[0.07] rounded-2xl p-6">
                     <h3 className="text-white font-bold text-base mb-6">Difficulty Distribution</h3>
                     <div className="flex flex-col sm:flex-row items-center gap-8 text-center sm:text-left">
                         <div className="relative w-32 h-32 shrink-0">
-                            <div className="w-full h-full rounded-full" style={{ background: donut }}/>
+                            <div className="w-full h-full rounded-full" style={{ background: donut }} />
                             <div className="absolute inset-4 rounded-full bg-[#030303] flex flex-col items-center justify-center">
                                 <span className="text-white font-bold text-xl leading-none">{q.total}</span>
                                 <span className="text-neutral-600 text-[9px] uppercase tracking-wider">total</span>
                             </div>
                         </div>
                         <div className="flex-1 space-y-4">
-                            {[{label:"Easy",count:q.easy,pct:easyPct,dot:"bg-emerald-400",txt:"text-emerald-400",bar:"bg-emerald-400"},{label:"Medium",count:q.medium,pct:medPct,dot:"bg-amber-400",txt:"text-amber-400",bar:"bg-amber-400"},{label:"Hard",count:q.hard,pct:hardPct,dot:"bg-rose-400",txt:"text-rose-400",bar:"bg-rose-400"}].map(d=>(
+                            {[{ label: "Easy", count: q.easy, pct: easyPct, dot: "bg-emerald-400", txt: "text-emerald-400", bar: "bg-emerald-400" }, { label: "Medium", count: q.medium, pct: medPct, dot: "bg-amber-400", txt: "text-amber-400", bar: "bg-amber-400" }, { label: "Hard", count: q.hard, pct: hardPct, dot: "bg-rose-400", txt: "text-rose-400", bar: "bg-rose-400" }].map(d => (
                                 <div key={d.label} className="space-y-1.5">
                                     <div className="flex items-center justify-between text-sm">
-                                        <div className="flex items-center gap-2"><div className={`w-2 h-2 rounded-full ${d.dot}`}/><span className="text-neutral-300">{d.label}</span></div>
+                                        <div className="flex items-center gap-2"><div className={`w-2 h-2 rounded-full ${d.dot}`} /><span className="text-neutral-300">{d.label}</span></div>
                                         <div className="flex items-center gap-2"><span className={`font-bold ${d.txt}`}>{d.count}</span><span className="text-neutral-600 text-xs">{d.pct.toFixed(0)}%</span></div>
                                     </div>
-                                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden"><div className={`h-full ${d.bar} rounded-full`} style={{width:`${d.pct}%`}}/></div>
+                                    <div className="h-1.5 bg-white/5 rounded-full overflow-hidden"><div className={`h-full ${d.bar} rounded-full`} style={{ width: `${d.pct}%` }} /></div>
                                 </div>
                             ))}
                         </div>
@@ -527,13 +523,13 @@ function OverviewTab() {
                     <h3 className="text-white font-bold text-base mb-6">Recent Signups</h3>
                     <div className="space-y-4">
                         {recentUsers.length === 0 ? <p className="text-neutral-500 text-sm">No users yet.</p> :
-                        recentUsers.map((usr, i) => (
-                            <div key={usr._id||i} className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30 border border-white/10 flex items-center justify-center text-white text-xs font-bold shrink-0">{((usr.firstname?.[0]||"")+( usr.lastname?.[0]||"")).toUpperCase()||"?"}</div>
-                                <div className="flex-1 min-w-0"><p className="text-white text-sm font-medium truncate">{usr.firstname} {usr.lastname}</p><p className="text-neutral-500 text-xs">@{usr.username}</p></div>
-                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border shrink-0 ${usr.role==="admin"?"bg-purple-500/10 text-purple-400 border-purple-500/30":"bg-neutral-500/10 text-neutral-500 border-neutral-500/20"}`}>{usr.role}</span>
-                            </div>
-                        ))}
+                            recentUsers.map((usr, i) => (
+                                <div key={usr._id || i} className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500/30 to-purple-500/30 border border-white/10 flex items-center justify-center text-white text-xs font-bold shrink-0">{((usr.firstname?.[0] || "") + (usr.lastname?.[0] || "")).toUpperCase() || "?"}</div>
+                                    <div className="flex-1 min-w-0"><p className="text-white text-sm font-medium truncate">{usr.firstname} {usr.lastname}</p><p className="text-neutral-500 text-xs">@{usr.username}</p></div>
+                                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border shrink-0 ${usr.role === "admin" ? "bg-purple-500/10 text-purple-400 border-purple-500/30" : "bg-neutral-500/10 text-neutral-500 border-neutral-500/20"}`}>{usr.role}</span>
+                                </div>
+                            ))}
                     </div>
                 </div>
             </div>
@@ -544,10 +540,10 @@ function OverviewTab() {
 // ─── Bulk Import Modal ────────────────────────────────────────────────────────
 function BulkImportModal({ onClose, onSuccess }) {
     const [jsonText, setJsonText] = useState("");
-    const [parsed, setParsed]     = useState(null);
+    const [parsed, setParsed] = useState(null);
     const [parseErr, setParseErr] = useState("");
-    const [loading, setLoading]   = useState(false);
-    const [result, setResult]     = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [result, setResult] = useState(null);
     const fileRef = useRef();
     const handleFile = e => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = ev => setJsonText(ev.target.result); r.readAsText(f); };
     const handleParse = () => {
@@ -562,7 +558,7 @@ function BulkImportModal({ onClose, onSuccess }) {
         if (!parsed) return;
         setLoading(true);
         try {
-            const res  = await fetch(`${API}/admin/bulkimport`, { method:"POST", headers: COMMON_HEADERS, ...authOpts, body: JSON.stringify({ questions: parsed }) });
+            const res = await fetch(`${API}/admin/bulkimport`, { method: "POST", headers: COMMON_HEADERS, ...authOpts, body: JSON.stringify({ questions: parsed }) });
             const data = await res.json();
             if (data.status) { setResult(data); toast.success(data.message); onSuccess(); }
             else toast.error(data.message || "Import failed.");
@@ -573,37 +569,37 @@ function BulkImportModal({ onClose, onSuccess }) {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm">
             <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl w-full max-w-2xl mx-4 shadow-2xl max-h-[90vh] flex flex-col">
                 <div className="flex items-center justify-between px-4 sm:px-8 py-5 border-b border-white/[0.07]">
-                    <div className="flex items-center gap-3"><div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center"><Upload size={16} className="text-emerald-400"/></div><div><h2 className="text-white font-bold">Bulk Import</h2><p className="text-neutral-500 text-[10px] sm:text-xs">JSON array or upload .json</p></div></div>
-                    <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-neutral-400 hover:text-white transition-all"><X size={14}/></button>
+                    <div className="flex items-center gap-3"><div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center"><Upload size={16} className="text-emerald-400" /></div><div><h2 className="text-white font-bold">Bulk Import</h2><p className="text-neutral-500 text-[10px] sm:text-xs">JSON array or upload .json</p></div></div>
+                    <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-neutral-400 hover:text-white transition-all"><X size={14} /></button>
                 </div>
                 <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-4">
                     {!result ? (
                         <>
                             <div className="flex items-center gap-3">
-                                <textarea rows={10} value={jsonText} onChange={e=>setJsonText(e.target.value)} placeholder={'[\n  {\n    "qno": 1, "qheading": "Two Sum",\n    "qdifficulty": "Easy",\n    "qdescription": "...",\n    "qstartcode": "...",\n    "qtags": ["Array"],\n    "qinput_output": [{"input":"4\\n2 7 11 15\\n9","output":"0 1"}, ...]\n  }\n]'} className="flex-1 w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-neutral-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all text-xs font-mono resize-none"/>
+                                <textarea rows={10} value={jsonText} onChange={e => setJsonText(e.target.value)} placeholder={'[\n  {\n    "qno": 1, "qheading": "Two Sum",\n    "qdifficulty": "Easy",\n    "qdescription": "...",\n    "qstartcode": "...",\n    "qtags": ["Array"],\n    "qinput_output": [{"input":"4\\n2 7 11 15\\n9","output":"0 1"}, ...]\n  }\n]'} className="flex-1 w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-white placeholder-neutral-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 transition-all text-xs font-mono resize-none" />
                             </div>
                             <div className="flex items-center gap-3">
-                                <button onClick={()=>fileRef.current.click()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white text-sm font-medium transition-all"><Upload size={14}/> Upload .json file</button>
-                                <input ref={fileRef} type="file" accept=".json" onChange={handleFile} className="hidden"/>
+                                <button onClick={() => fileRef.current.click()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-neutral-300 hover:text-white text-sm font-medium transition-all"><Upload size={14} /> Upload .json file</button>
+                                <input ref={fileRef} type="file" accept=".json" onChange={handleFile} className="hidden" />
                                 <button onClick={handleParse} disabled={!jsonText.trim()} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-all disabled:opacity-40">Parse JSON →</button>
                             </div>
-                            {parseErr && <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-400 text-xs"><AlertCircle size={14} className="shrink-0 mt-0.5"/>{parseErr}</div>}
+                            {parseErr && <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-red-400 text-xs"><AlertCircle size={14} className="shrink-0 mt-0.5" />{parseErr}</div>}
                             {parsed && (
                                 <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl p-4 space-y-3">
-                                    <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm"><CheckCircle2 size={16}/> Parsed {parsed.length} question{parsed.length!==1?"s":""}</div>
-                                    <div className="space-y-1 max-h-40 overflow-y-auto">{parsed.slice(0,8).map((q,i)=>(<div key={i} className="flex items-center gap-2 text-xs"><span className="text-neutral-500 font-mono w-6">#{q.qno}</span><span className="text-white truncate">{q.qheading||"(no title)"}</span><span className={`ml-auto px-2 py-0.5 rounded text-[10px] font-bold ${q.qdifficulty==="Easy"?"text-emerald-400":q.qdifficulty==="Medium"?"text-amber-400":"text-rose-400"}`}>{q.qdifficulty}</span></div>))}{parsed.length>8&&<p className="text-neutral-500 text-xs">+{parsed.length-8} more…</p>}</div>
-                                    <button onClick={handleImport} disabled={loading} className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2">{loading?<><Loader2 size={16} className="animate-spin"/>Importing...</>:<><Upload size={16}/>Import {parsed.length} Question{parsed.length!==1?"s":""}</>}</button>
+                                    <div className="flex items-center gap-2 text-emerald-400 font-semibold text-sm"><CheckCircle2 size={16} /> Parsed {parsed.length} question{parsed.length !== 1 ? "s" : ""}</div>
+                                    <div className="space-y-1 max-h-40 overflow-y-auto">{parsed.slice(0, 8).map((q, i) => (<div key={i} className="flex items-center gap-2 text-xs"><span className="text-neutral-500 font-mono w-6">#{q.qno}</span><span className="text-white truncate">{q.qheading || "(no title)"}</span><span className={`ml-auto px-2 py-0.5 rounded text-[10px] font-bold ${q.qdifficulty === "Easy" ? "text-emerald-400" : q.qdifficulty === "Medium" ? "text-amber-400" : "text-rose-400"}`}>{q.qdifficulty}</span></div>))}{parsed.length > 8 && <p className="text-neutral-500 text-xs">+{parsed.length - 8} more…</p>}</div>
+                                    <button onClick={handleImport} disabled={loading} className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2">{loading ? <><Loader2 size={16} className="animate-spin" />Importing...</> : <><Upload size={16} />Import {parsed.length} Question{parsed.length !== 1 ? "s" : ""}</>}</button>
                                 </div>
                             )}
                         </>
                     ) : (
                         <div className="py-6 space-y-6">
-                            <div className="flex items-center gap-3"><CheckCircle2 size={32} className="text-emerald-400"/><div><p className="text-white font-bold text-lg">Import Complete</p><p className="text-neutral-500 text-sm">{result.message}</p></div></div>
+                            <div className="flex items-center gap-3"><CheckCircle2 size={32} className="text-emerald-400" /><div><p className="text-white font-bold text-lg">Import Complete</p><p className="text-neutral-500 text-sm">{result.message}</p></div></div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 text-center"><p className="text-emerald-400 text-3xl font-extrabold">{result.inserted}</p><p className="text-neutral-400 text-sm mt-1">Inserted</p></div>
                                 <div className="bg-neutral-500/10 border border-neutral-500/20 rounded-xl p-4 text-center"><p className="text-neutral-400 text-3xl font-extrabold">{result.skipped}</p><p className="text-neutral-500 text-sm mt-1">Skipped</p></div>
                             </div>
-                            {result.errors?.length > 0 && <div className="bg-white/[0.02] border border-white/[0.07] rounded-xl p-4 max-h-40 overflow-y-auto space-y-1">{result.errors.map((e,i)=><p key={i} className="text-neutral-400 text-xs font-mono">{e}</p>)}</div>}
+                            {result.errors?.length > 0 && <div className="bg-white/[0.02] border border-white/[0.07] rounded-xl p-4 max-h-40 overflow-y-auto space-y-1">{result.errors.map((e, i) => <p key={i} className="text-neutral-400 text-xs font-mono">{e}</p>)}</div>}
                             <button onClick={onClose} className="w-full py-3 rounded-xl border border-white/10 text-neutral-300 hover:text-white hover:border-white/20 transition-all font-medium">Close</button>
                         </div>
                     )}
@@ -629,7 +625,7 @@ function QuestionsTab() {
     const fetchQuestions = useCallback(async (p = 1) => {
         setLoading(true);
         try {
-            const res  = await fetch(`${API}/admin/questions?page=${p}&limit=15`, { headers: COMMON_HEADERS, ...authOpts });
+            const res = await fetch(`${API}/admin/questions?page=${p}&limit=15`, { headers: COMMON_HEADERS, ...authOpts });
             const data = await res.json();
             if (data.status) { setQuestions(data.doc); setTotalPages(data.pages || 1); setTotal(data.total || 0); }
             else toast.error("Failed to load questions.");
@@ -643,7 +639,7 @@ function QuestionsTab() {
         if (!confirmDelete) return;
         setDeleting(confirmDelete.qno);
         try {
-            const res  = await fetch(`${API}/admin/deletequestion/${confirmDelete.qno}`, { method: "DELETE", headers: COMMON_HEADERS, ...authOpts });
+            const res = await fetch(`${API}/admin/deletequestion/${confirmDelete.qno}`, { method: "DELETE", headers: COMMON_HEADERS, ...authOpts });
             const data = await res.json();
             if (data.status) { toast.success(data.message); fetchQuestions(page); }
             else toast.error(data.message || "Delete failed.");
@@ -658,9 +654,9 @@ function QuestionsTab() {
 
     return (
         <div>
-            {showImport && <BulkImportModal onClose={() => setShowImport(false)} onSuccess={() => fetchQuestions(page)}/>}
-            {drawer && <QuestionDrawer editQuestion={drawer==="add"?null:drawer} onClose={()=>setDrawer(null)} onSuccess={()=>fetchQuestions(page)}/>}
-            {confirmDelete && <ConfirmModal title="Delete Question" description={<>Delete <span className="text-white font-semibold">#{confirmDelete.qno} — {confirmDelete.qheading}</span>? All test cases will be removed.</>} confirmLabel="Delete" onConfirm={handleDelete} onCancel={()=>setConfirmDelete(null)}/>}
+            {showImport && <BulkImportModal onClose={() => setShowImport(false)} onSuccess={() => fetchQuestions(page)} />}
+            {drawer && <QuestionDrawer editQuestion={drawer === "add" ? null : drawer} onClose={() => setDrawer(null)} onSuccess={() => fetchQuestions(page)} />}
+            {confirmDelete && <ConfirmModal title="Delete Question" description={<>Delete <span className="text-white font-semibold">#{confirmDelete.qno} — {confirmDelete.qheading}</span>? All test cases will be removed.</>} confirmLabel="Delete" onConfirm={handleDelete} onCancel={() => setConfirmDelete(null)} />}
 
             {/* Toolbar */}
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
@@ -678,7 +674,7 @@ function QuestionsTab() {
                         />
                     </div>
                     <div className="flex items-center gap-2 w-full sm:w-auto">
-                        <button onClick={() => setShowImport(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 font-semibold text-sm transition-all shrink-0"><Upload size={16}/> Import</button>
+                        <button onClick={() => setShowImport(true)} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 font-semibold text-sm transition-all shrink-0"><Upload size={16} /> Import</button>
                         <button onClick={() => setDrawer("add")} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-sm transition-all shrink-0 shadow-[0_0_20px_rgba(59,130,246,0.25)]"><Plus size={16} /> Add</button>
                     </div>
                 </div>
@@ -714,7 +710,7 @@ function QuestionsTab() {
                                                 {q.qdifficulty}
                                             </span>
                                         </div>
-                                        
+
                                         <div className="flex flex-wrap gap-1.5">
                                             {(q.qtags || []).slice(0, 3).map(t => (
                                                 <span key={t} className="px-2 py-0.5 rounded-md bg-white/5 border border-white/[0.07] text-neutral-500 text-[10px]">{t}</span>
@@ -839,7 +835,7 @@ function UsersTab() {
     const fetchUsers = useCallback(async (p = 1) => {
         setLoading(true);
         try {
-            const res  = await fetch(`${API}/admin/viewusers?page=${p}&limit=15`, { headers: COMMON_HEADERS, ...authOpts });
+            const res = await fetch(`${API}/admin/viewusers?page=${p}&limit=15`, { headers: COMMON_HEADERS, ...authOpts });
             const data = await res.json();
             if (data.status) { setUsers(data.users); setTotalPages(data.pages || 1); setTotal(data.total || 0); }
             else toast.error("Failed to load users.");
@@ -853,7 +849,7 @@ function UsersTab() {
         if (!confirmDeleteUser) return;
         setDeleting(confirmDeleteUser._id);
         try {
-            const res  = await fetch(`${API}/admin/deleteuser/${confirmDeleteUser._id}`, { method: "DELETE", headers: COMMON_HEADERS, ...authOpts });
+            const res = await fetch(`${API}/admin/deleteuser/${confirmDeleteUser._id}`, { method: "DELETE", headers: COMMON_HEADERS, ...authOpts });
             const data = await res.json();
             if (data.status) { toast.success(data.message); setViewUser(null); setConfirmDeleteUser(null); fetchUsers(page); }
             else toast.error(data.message || "Delete failed.");
@@ -866,7 +862,7 @@ function UsersTab() {
         const newRole = confirmRoleUser.role === "admin" ? "user" : "admin";
         setRoleSaving(confirmRoleUser._id);
         try {
-            const res  = await fetch(`${API}/admin/updateuserrole/${confirmRoleUser._id}`, { method: "PATCH", headers: COMMON_HEADERS, ...authOpts, body: JSON.stringify({ role: newRole }) });
+            const res = await fetch(`${API}/admin/updateuserrole/${confirmRoleUser._id}`, { method: "PATCH", headers: COMMON_HEADERS, ...authOpts, body: JSON.stringify({ role: newRole }) });
             const data = await res.json();
             if (data.status) { toast.success(data.message); setConfirmRoleUser(null); setViewUser(null); fetchUsers(page); }
             else toast.error(data.message);
@@ -967,17 +963,17 @@ function UsersTab() {
                                     </div>
 
                                     <div className="flex items-center gap-2 pt-1">
-                                        <button onClick={()=>setViewUser(u)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold text-blue-400 bg-blue-400/5 border border-blue-400/20 active:scale-95 transition-all outline-none"><Eye size={12}/> View</button>
-                                        <button 
-                                            onClick={()=>setConfirmRoleUser(u)} 
-                                            disabled={roleSaving===u._id || u._id === localStorage.getItem("userId")} 
-                                            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold active:scale-95 transition-all outline-none disabled:opacity-30 ${u.role==="admin"?"text-neutral-400 bg-neutral-400/5 border border-neutral-400/20":"text-purple-400 bg-purple-400/5 border border-purple-400/20 hover:bg-purple-400/15"}`}
+                                        <button onClick={() => setViewUser(u)} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold text-blue-400 bg-blue-400/5 border border-blue-400/20 active:scale-95 transition-all outline-none"><Eye size={12} /> View</button>
+                                        <button
+                                            onClick={() => setConfirmRoleUser(u)}
+                                            disabled={roleSaving === u._id || u._id === localStorage.getItem("userId")}
+                                            className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold active:scale-95 transition-all outline-none disabled:opacity-30 ${u.role === "admin" ? "text-neutral-400 bg-neutral-400/5 border border-neutral-400/20" : "text-purple-400 bg-purple-400/5 border border-purple-400/20 hover:bg-purple-400/15"}`}
                                         >
-                                            {roleSaving===u._id?<Loader2 size={12} className="animate-spin"/>:u.role==="admin"?"Demote":"Promote"}
+                                            {roleSaving === u._id ? <Loader2 size={12} className="animate-spin" /> : u.role === "admin" ? "Demote" : "Promote"}
                                         </button>
                                         {u.role !== "admin" && (
-                                            <button onClick={()=>setConfirmDeleteUser(u)} disabled={deleting===u._id} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold text-red-400 bg-red-400/5 border border-red-400/20 active:scale-95 transition-all outline-none disabled:opacity-40">
-                                                {deleting===u._id?<Loader2 size={12} className="animate-spin"/>:<Trash2 size={12}/>} Delete
+                                            <button onClick={() => setConfirmDeleteUser(u)} disabled={deleting === u._id} className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[11px] font-bold text-red-400 bg-red-400/5 border border-red-400/20 active:scale-95 transition-all outline-none disabled:opacity-40">
+                                                {deleting === u._id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />} Delete
                                             </button>
                                         )}
                                     </div>
@@ -1013,11 +1009,10 @@ function UsersTab() {
                                             </td>
                                             <td className="px-5 py-4 text-neutral-400 hidden md:table-cell">{u.email}</td>
                                             <td className="px-4 py-4 text-center">
-                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${
-                                                    u.role === "admin"
-                                                        ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
-                                                        : "bg-neutral-500/10 text-neutral-400 border-neutral-500/20"
-                                                }`}>
+                                                <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${u.role === "admin"
+                                                    ? "bg-purple-500/10 text-purple-400 border-purple-500/30"
+                                                    : "bg-neutral-500/10 text-neutral-400 border-neutral-500/20"
+                                                    }`}>
                                                     {u.role}
                                                 </span>
                                             </td>
@@ -1026,16 +1021,16 @@ function UsersTab() {
                                             </td>
                                             <td className="px-5 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-2">
-                                                    <button onClick={()=>setViewUser(u)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-blue-400 hover:text-blue-300 bg-blue-400/5 hover:bg-blue-400/15 border border-blue-400/20 transition-all"><Eye size={12}/> View</button>
-                                                    <button 
-                                                        onClick={()=>setConfirmRoleUser(u)} 
-                                                        disabled={roleSaving===u._id || u._id === localStorage.getItem("userId")} 
+                                                    <button onClick={() => setViewUser(u)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-blue-400 hover:text-blue-300 bg-blue-400/5 hover:bg-blue-400/15 border border-blue-400/20 transition-all"><Eye size={12} /> View</button>
+                                                    <button
+                                                        onClick={() => setConfirmRoleUser(u)}
+                                                        disabled={roleSaving === u._id || u._id === localStorage.getItem("userId")}
                                                         title={u._id === localStorage.getItem("userId") ? "You cannot change your own role" : ""}
-                                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-40 ${u.role==="admin"?"text-neutral-400 bg-neutral-400/5 border border-neutral-400/20":"text-purple-400 bg-purple-400/5 border border-purple-400/20 hover:bg-purple-400/15"}`}
+                                                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all disabled:opacity-40 ${u.role === "admin" ? "text-neutral-400 bg-neutral-400/5 border border-neutral-400/20" : "text-purple-400 bg-purple-400/5 border border-purple-400/20 hover:bg-purple-400/15"}`}
                                                     >
-                                                        {roleSaving===u._id?<Loader2 size={12} className="animate-spin"/>:u.role==="admin"?"Demote":"Promote"}
+                                                        {roleSaving === u._id ? <Loader2 size={12} className="animate-spin" /> : u.role === "admin" ? "Demote" : "Promote"}
                                                     </button>
-                                                    {u.role !== "admin" && <button onClick={()=>setConfirmDeleteUser(u)} disabled={deleting===u._id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-400 hover:text-red-300 bg-red-400/5 hover:bg-red-400/15 border border-red-400/20 transition-all disabled:opacity-40">{deleting===u._id?<Loader2 size={12} className="animate-spin"/>:<Trash2 size={12}/>}Delete</button>}
+                                                    {u.role !== "admin" && <button onClick={() => setConfirmDeleteUser(u)} disabled={deleting === u._id} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-red-400 hover:text-red-300 bg-red-400/5 hover:bg-red-400/15 border border-red-400/20 transition-all disabled:opacity-40">{deleting === u._id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}Delete</button>}
                                                 </div>
                                             </td>
                                         </tr>
@@ -1070,9 +1065,9 @@ export default function AdminPanel() {
     const [activeTab, setActiveTab] = useState("questions");
 
     const tabs = [
-        { id: "overview",  label: "Overview",  icon: <TrendingUp size={16}/> },
-        { id: "questions", label: "Questions", icon: <BookOpen size={16}/> },
-        { id: "users",     label: "Users",     icon: <Users size={16}/> },
+        { id: "overview", label: "Overview", icon: <TrendingUp size={16} /> },
+        { id: "questions", label: "Questions", icon: <BookOpen size={16} /> },
+        { id: "users", label: "Users", icon: <Users size={16} /> },
     ];
 
     return (
@@ -1102,11 +1097,10 @@ export default function AdminPanel() {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shrink-0 ${
-                                activeTab === tab.id
-                                    ? "bg-white text-black shadow-sm"
-                                    : "text-neutral-400 hover:text-white hover:bg-white/5"
-                            }`}
+                            className={`flex items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shrink-0 ${activeTab === tab.id
+                                ? "bg-white text-black shadow-sm"
+                                : "text-neutral-400 hover:text-white hover:bg-white/5"
+                                }`}
                         >
                             {tab.icon} {tab.label}
                         </button>
@@ -1115,9 +1109,9 @@ export default function AdminPanel() {
 
                 {/* Tab Content */}
                 <div>
-                    {activeTab === "overview"  && <OverviewTab />}
+                    {activeTab === "overview" && <OverviewTab />}
                     {activeTab === "questions" && <QuestionsTab />}
-                    {activeTab === "users"     && <UsersTab />}
+                    {activeTab === "users" && <UsersTab />}
                 </div>
             </main>
         </div>

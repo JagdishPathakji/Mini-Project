@@ -46,6 +46,18 @@ export default function InterviewRoom() {
     const synthRef = useRef(window.speechSynthesis);
     const chatEndRef = useRef(null);
     const [expandedEval, setExpandedEval] = useState(null);
+    const [tabChanges, setTabChanges] = useState(0);
+    const handleTabChange = () => {
+        setTabChanges(prev => {
+            const newCount = prev + 1;
+            if (newCount > 4) {
+                // Exceeded allowed tab changes, end interview automatically
+                handleEndInterview();
+                return 0; // reset counter after ending
+            }
+            return newCount;
+        });
+    };
     const isMountedRef = useRef(true);
     const currentQuestionRef = useRef("");
     const conversationHistoryRef = useRef([]);
@@ -112,7 +124,7 @@ export default function InterviewRoom() {
         const preferred = voices.find(v =>
             v.name.includes("Google") && v.lang.startsWith("en")
         ) || voices.find(v => v.lang.startsWith("en") && v.localService === false)
-          || voices.find(v => v.lang.startsWith("en"));
+            || voices.find(v => v.lang.startsWith("en"));
         if (preferred) utterance.voice = preferred;
 
         utterance.onend = () => {
@@ -496,13 +508,13 @@ export default function InterviewRoom() {
 
                     <div className="flex justify-center gap-4">
                         <button
-                            onClick={() => navigate("/ai-interview")}
+                            onClick={() => { handleTabChange(); navigate("/ai-interview"); }}
                             className="px-8 py-3 rounded-2xl bg-white text-black font-bold hover:bg-neutral-200 transition-all hover:-translate-y-0.5 shadow-[0_0_30px_-8px_rgba(255,255,255,0.15)]"
                         >
                             New Interview
                         </button>
                         <button
-                            onClick={() => navigate("/dashboard")}
+                            onClick={() => { handleTabChange(); navigate("/dashboard"); }}
                             className="px-8 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all hover:-translate-y-0.5"
                         >
                             Dashboard
