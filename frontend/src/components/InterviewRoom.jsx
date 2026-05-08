@@ -439,8 +439,9 @@ export default function InterviewRoom() {
                 <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-violet-600/10 blur-[120px] pointer-events-none" />
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-600/8 blur-[120px] pointer-events-none" />
                 <Navbar />
+                <div className="h-16 shrink-0 w-full" />
 
-                <main className="pt-28 pb-24 max-w-4xl mx-auto px-6 relative z-10">
+                <main className="pt-12 pb-24 max-w-4xl mx-auto px-6 relative z-10">
                     <div className="text-center mb-12">
                         <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-[0_0_40px_rgba(251,191,36,0.3)]">
                             <Trophy size={36} className="text-white" />
@@ -548,10 +549,11 @@ export default function InterviewRoom() {
             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-violet-600/8 blur-[120px] pointer-events-none" />
             <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-600/6 blur-[120px] pointer-events-none" />
 
-            <div className="shrink-0"><Navbar /></div>
+            <Navbar />
+            <div className="h-16 shrink-0 w-full" />
 
             {/* ── Header Bar ── */}
-            <div className="pt-20 px-6 pb-3 relative z-10 border-b border-white/[0.04]">
+            <div className="pt-6 px-6 pb-3 relative z-10 border-b border-white/[0.04]">
                 <div className="max-w-4xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-wrap">
                         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.06]">
