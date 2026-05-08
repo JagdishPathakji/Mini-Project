@@ -47,16 +47,24 @@ export default function InterviewRoom() {
     const chatEndRef = useRef(null);
     const [expandedEval, setExpandedEval] = useState(null);
     const [tabChanges, setTabChanges] = useState(0);
+    // Increment tab change counter and auto‑end interview after 4 changes
     const handleTabChange = () => {
         setTabChanges(prev => {
             const newCount = prev + 1;
             if (newCount > 4) {
-                // Exceeded allowed tab changes, end interview automatically
+                // Exceeded allowed changes – finish interview
                 handleEndInterview();
-                return 0; // reset counter after ending
+                return 0; // reset after ending
             }
             return newCount;
         });
+    };
+    // Helper used by navigation buttons to enforce the tab‑change limit
+    const handleNavigation = (path) => {
+        handleTabChange();
+        // If the interview has already been ended, avoid further navigation
+        if (showSummary) return;
+        navigate(path);
     };
     const isMountedRef = useRef(true);
     const currentQuestionRef = useRef("");
@@ -508,13 +516,13 @@ export default function InterviewRoom() {
 
                     <div className="flex justify-center gap-4">
                         <button
-                            onClick={() => { handleTabChange(); navigate("/ai-interview"); }}
+                            onClick={() => handleNavigation("/ai-interview")}
                             className="px-8 py-3 rounded-2xl bg-white text-black font-bold hover:bg-neutral-200 transition-all hover:-translate-y-0.5 shadow-[0_0_30px_-8px_rgba(255,255,255,0.15)]"
                         >
                             New Interview
                         </button>
                         <button
-                            onClick={() => { handleTabChange(); navigate("/dashboard"); }}
+                            onClick={() => handleNavigation("/dashboard")}
                             className="px-8 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold hover:bg-white/10 transition-all hover:-translate-y-0.5"
                         >
                             Dashboard
@@ -569,17 +577,13 @@ export default function InterviewRoom() {
                         >
                             {ttsEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
                         </button>
-                        <button
-                            id="end-interview-btn"
-                            onClick={handleEndInterview}
-                            disabled={evaluations.length === 0}
-                            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${evaluations.length > 0
-                                ? "bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 cursor-pointer"
-                                : "bg-white/5 border border-white/5 text-neutral-600 cursor-not-allowed"
-                                }`}
-                        >
-                            End Interview
-                        </button>
+<button
+    id="end-interview-btn"
+    onClick={handleEndInterview}
+    className="px-4 py-2 rounded-xl text-xs font-semibold bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 cursor-pointer"
+>
+    End Interview
+</button>
                     </div>
                 </div>
 
