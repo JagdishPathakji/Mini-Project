@@ -570,6 +570,12 @@ export default function InterviewRoom() {
                                 <span className="text-xs text-neutral-300 font-medium">Avg: {avgScore}/10</span>
                             </div>
                         )}
+                        {tabChanges > 0 && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-500/10 border border-red-500/20 shadow-[0_0_15px_-3px_rgba(220,38,38,0.3)]">
+                                <AlertCircle size={12} className="text-red-400 animate-pulse" />
+                                <span className="text-xs text-red-400 font-bold">Warnings: {tabChanges}/4</span>
+                            </div>
+                        )}
                     </div>
                     <div className="flex items-center gap-3">
                         {/* TTS toggle */}
