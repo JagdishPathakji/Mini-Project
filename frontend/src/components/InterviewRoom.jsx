@@ -49,7 +49,7 @@ export default function InterviewRoom() {
     const [tabChanges, setTabChanges] = useState(0);
 
     const handleEndInterviewRef = useRef(null);
-    
+
     // Increment tab change counter and auto‑end interview after 4 visibility changes
     useEffect(() => {
         const handleVisibilityChange = () => {
@@ -583,13 +583,13 @@ export default function InterviewRoom() {
                         >
                             {ttsEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
                         </button>
-<button
-    id="end-interview-btn"
-    onClick={handleEndInterview}
-    className="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_-3px_rgba(220,38,38,0.5)] transition-all cursor-pointer"
->
-    Exit Interview
-</button>
+                        <button
+                            id="end-interview-btn"
+                            onClick={handleEndInterview}
+                            className="px-4 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-500 text-white shadow-[0_0_15px_-3px_rgba(220,38,38,0.5)] transition-all cursor-pointer"
+                        >
+                            Exit Interview
+                        </button>
                     </div>
                 </div>
 
@@ -606,7 +606,7 @@ export default function InterviewRoom() {
             </div>
 
             {/* ── Chat Transcript ── */}
-            <div className="flex-1 overflow-y-auto px-6 py-6 pb-32 relative z-10 scroll-smooth">
+            <div className="flex-1 overflow-y-auto px-6 py-6 pb-6 relative z-10 scroll-smooth">
                 <div className="max-w-4xl mx-auto space-y-5 flex flex-col">
                     {transcript.map((item) => {
                         if (item.type === "question") {
@@ -728,9 +728,9 @@ export default function InterviewRoom() {
             </div>
 
             {/* ── Bottom Control Bar ── */}
-            <div className="absolute bottom-0 left-0 right-0 z-20 border-t border-white/[0.06] bg-[#030303]/90 backdrop-blur-2xl">
+            <div className="shrink-0 w-full z-20 border-t border-white/[0.06] bg-[#030303]/90 backdrop-blur-2xl relative">
                 <div className="max-w-4xl mx-auto px-6 py-5 flex items-center justify-center gap-6 relative">
-                    
+
                     {/* EXIT BUTTON - ALWAYS VISIBLE */}
                     <div className="absolute right-6 top-1/2 -translate-y-1/2 hidden md:block">
                         <button
