@@ -739,6 +739,21 @@ export default function DSAInterviewRoom() {
                             theme="vs-dark"
                             value={codes[currentIndex]}
                             onChange={handleCodeChange}
+                            onMount={(editor, monaco) => {
+                                editor.getDomNode().addEventListener('paste', (e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    toast.error("Pasting is disabled to avoid plagiarism!");
+                                }, true);
+                                
+                                editor.onKeyDown((e) => {
+                                    if ((e.ctrlKey || e.metaKey) && e.keyCode === monaco.KeyCode.KeyV) {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        toast.error("Pasting is disabled to avoid plagiarism!");
+                                    }
+                                });
+                            }}
                             options={{
                                 minimap: { enabled: false },
                                 fontSize: 14,
