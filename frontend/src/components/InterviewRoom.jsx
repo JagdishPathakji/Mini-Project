@@ -15,6 +15,7 @@ const STATES = {
     IDLE: "IDLE",               // Waiting for user to start recording
     RECORDING: "RECORDING",     // User is speaking (audio being captured)
     TRANSCRIBING: "TRANSCRIBING", // Audio sent to Groq Whisper
+    REVIEWING: "REVIEWING",     // User reviewing transcribed text
     EVALUATING: "EVALUATING",   // Answer sent to AI for evaluation
     ERROR: "ERROR",
 };
@@ -34,6 +35,7 @@ export default function InterviewRoom() {
     const [errorMsg, setErrorMsg] = useState("");
     const [showSummary, setShowSummary] = useState(false);
     const [ttsEnabled, setTtsEnabled] = useState(true);
+    const [draftAnswer, setDraftAnswer] = useState("");
 
     // Recording state
     const [recordingTime, setRecordingTime] = useState(0);
@@ -304,10 +306,17 @@ export default function InterviewRoom() {
 
         if (!isMountedRef.current) return;
 
+        setDraftAnswer(transcribedText);
+        setPhase(STATES.REVIEWING);
+    };
+
+    const handleSendAnswer = async () => {
+        if (!draftAnswer.trim() || !isMountedRef.current) return;
+
         // Add user answer to transcript
         setTranscript((prev) => [
             ...prev,
-            { type: "answer", text: transcribedText, id: Date.now() },
+            { type: "answer", text: draftAnswer, id: Date.now() },
         ]);
 
         // Step 2: Evaluate via AI
@@ -323,7 +332,7 @@ export default function InterviewRoom() {
                 },
                 body: JSON.stringify({
                     question: currentQuestionRef.current,
-                    userAnswer: transcribedText,
+                    userAnswer: draftAnswer,
                     role,
                     experienceLevel,
                     jd,
@@ -356,7 +365,7 @@ export default function InterviewRoom() {
 
                 setConversationHistory((prev) => [
                     ...prev,
-                    { question: currentQuestionRef.current, answer: transcribedText },
+                    { question: currentQuestionRef.current, answer: draftAnswer },
                 ]);
                 setCurrentQuestion(data.nextQuestion);
                 setCurrentSkillTag(data.skillTag || "General");
@@ -612,7 +621,7 @@ export default function InterviewRoom() {
                     </div>
                 )}
             </div>
-
+                
             {/* ── Chat Transcript ── */}
             <div className="flex-1 px-6 py-6 pb-6 relative z-10 overflow-y-auto scroll-smooth">
                 <div className="max-w-4xl mx-auto space-y-5 flex flex-col">
@@ -751,7 +760,7 @@ export default function InterviewRoom() {
 
                     {/* Error */}
                     {phase === STATES.ERROR && (
-                        <div className="flex items-center gap-4 w-full">
+                        <div className="flex items-center gap-4 w-full md:pr-40">
                             <div className="flex-1 flex items-center gap-2 px-4 py-3 rounded-2xl bg-red-500/10 border border-red-500/20">
                                 <AlertCircle size={16} className="text-red-400 shrink-0" />
                                 <p className="text-xs text-red-300 line-clamp-2">{errorMsg}</p>
@@ -761,6 +770,24 @@ export default function InterviewRoom() {
                                 className="px-6 py-3 rounded-2xl bg-white/10 border border-white/10 text-sm font-semibold text-white hover:bg-white/15 transition-all shrink-0 cursor-pointer"
                             >
                                 Retry
+                            </button>
+                        </div>
+                    )}
+
+                    {/* REVIEWING — user can edit transcribed text before sending */}
+                    {phase === STATES.REVIEWING && (
+                        <div className="flex items-center gap-3 w-full md:pr-40">
+                            <textarea
+                                value={draftAnswer}
+                                onChange={(e) => setDraftAnswer(e.target.value)}
+                                className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-violet-500/50 resize-none h-[60px]"
+                                placeholder="Edit your answer..."
+                            />
+                            <button
+                                onClick={handleSendAnswer}
+                                className="h-[60px] px-6 rounded-xl bg-gradient-to-br from-violet-500 to-cyan-500 hover:brightness-110 text-white font-bold text-sm shadow-[0_0_20px_-5px_rgba(139,92,246,0.5)] transition-all cursor-pointer flex items-center justify-center shrink-0"
+                            >
+                                Send
                             </button>
                         </div>
                     )}
